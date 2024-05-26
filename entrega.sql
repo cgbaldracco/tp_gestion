@@ -160,6 +160,7 @@ CREATE TABLE [MONSTERS_INC].[Item_Ticket]
 (
     [item_tick_id] numeric(18) IDENTITY NOT NULL,
     [item_tick_ticket] numeric(18),
+	[item_tick_promocion] numeric(18),
     [item_tick_producto] numeric(18),
     [item_tick_cantidad] decimal(18,0),
     [item_tick_total] decimal(18,2),
@@ -170,7 +171,8 @@ CREATE TABLE [MONSTERS_INC].[Item_Ticket]
 CREATE TABLE [MONSTERS_INC].[Caja]
 (
     [caja_id] numeric(18) IDENTITY NOT NULL,
-    [caja_tipo] nvarchar(10)
+    [caja_tipo] nvarchar(10),
+	[caja_sucursal] numeric(18)
 );
 
 /* TIPO COMPROBANTE */
@@ -192,12 +194,135 @@ CREATE TABLE [MONSTERS_INC].[Descuento_Medio_Pago]
 	[desc_tope] decimal(18,0)
 );
 
+/* DESCUENTO MEDIO PAGO APLICADO */
+CREATE TABLE [MONSTERS_INC].[Descuento_Medio_Pago_Aplicado]
+(
+    [desc_apli_id] numeric(18) IDENTITY NOT NULL,
+    [desc_apli_pago] numeric(18) IDENTITY NOT NULL,
+    [desc_apli_cod_descuento_mp] numeric(18) IDENTITY NOT NULL,
+    [desc_apli_descuento_aplicado] decimal(18,2)
+);
+
 /* MEDIO PAGO */
 CREATE TABLE [MONSTERS_INC].[Medio_Pago]
 (
     [medio_pago_id] numeric(18) NOT NULL IDENTITY,
     [medio_pago_tipo] nvarchar(50),
     [medio_pago_nombre] nvarchar(50)
+);
+
+/* TARJETA */
+CREATE TABLE [MONSTERS_INC].[Tarjeta]
+(
+    [tarj_id] numeric(18) NOT NULL IDENTITY,
+    [tarj_numero] nvarchar(50),
+    [tarj_vencimiento_tarjeta] datetime
+);
+
+/* DETALLE PAGO */
+CREATE TABLE [MONSTERS_INC].[Detalle_Pago]
+(
+    [deta_id] numeric(18) NOT NULL IDENTITY,
+    [deta_cliente] numeric(18) NOT NULL,
+    [deta_tarjeta] numeric(18) NOT NULL
+);
+
+/* PAGO */
+CREATE TABLE [MONSTERS_INC].[Pago]
+(
+    [pago_id] numeric(18) NOT NULL IDENTITY,
+    [pago_fecha] datetime,
+    [pago_medio_pago] numeric(18) NOT NULL,
+	[pago_detalle] numeric(18),
+	[pago_importe] decimal(18,2),
+	[pago_ticket] numeric(18)
+);
+
+/* ESTADO */
+CREATE TABLE [MONSTERS_INC].[Estado]
+(
+    [esta_id] numeric(18) NOT NULL IDENTITY,
+    [esta_descripcion] nvarchar(255),
+);
+
+/* ENTREGA */
+CREATE TABLE [MONSTERS_INC].[Entrega]
+(
+    [entr_id] numeric(18) NOT NULL IDENTITY,
+    [entr_fecha_hora_entrega] datetime
+);
+
+/* ENVIO */
+CREATE TABLE [MONSTERS_INC].[Envio]
+(
+    [envi_id] numeric(18) NOT NULL IDENTITY,
+    [envi_ticket_id] numeric(18) NOT NULL,
+    [envi_fecha] datetime,
+	[envi_hora_inicio] datetime,
+	[envi_hora_fin] datetime,
+	[envi_cliente] numeric(18) NOT NULL,
+	[envi_costo] numeric(18),
+	[envi_estado] numeric(18) NOT NULL,
+	[envi_entrega] numeric(18)
+);
+
+/* CLIENTE */
+CREATE TABLE [MONSTERS_INC].[Cliente]
+(
+    [clie_id] numeric(18) NOT NULL IDENTITY,
+    [clie_dni] numeric(18),
+    [clie_nombre] nvarchar(50),
+	[clie_apellido] nvarchar(50),
+	[clie_domicilio] nvarchar(50),
+	[clie_localidad] numeric(18),
+	[clie_fecha_nacimiento] datetime,
+	[clie_fecha_registro] datetime,
+	[clie_mail] nvarchar(50),
+	[clie_telefono] numeric(18)
+);
+
+/* LOCALIDAD */
+CREATE TABLE [MONSTERS_INC].[Localidad]
+(
+    [loca_id] numeric(18) NOT NULL IDENTITY,
+    [loca_nombre] nvarchar(50),
+	[loca_provincia] numeric(18) NOT NULL 
+);
+
+/* PROVINCIA */
+CREATE TABLE [MONSTERS_INC].[Provincia]
+(
+    [prov_id] numeric(18) NOT NULL IDENTITY,
+    [prov_nombre] nvarchar(50)
+);
+
+/* EMPLEADO */
+CREATE TABLE [MONSTERS_INC].[Empleado]
+(
+    [empl_id] numeric(18) NOT NULL IDENTITY,
+    [empl_sucursal] numeric(18) NOT NULL,
+    [empl_nombre] nvarchar(50),
+	[empl_apellido] nvarchar(50),
+	[empl_dni] numeric(18),
+	[empl_fecha_registro] datetime,
+	[empl_telefono] numeric(18),
+	[empl_mail] nvarchar(50),
+	[empl_fecha_nacimiento] datetime
+);
+
+/* TICKET */
+CREATE TABLE [MONSTERS_INC].[Ticket]
+(
+    [tick_id] numeric(18) NOT NULL IDENTITY,
+    [tick_fecha_hora] datetime,
+	[tick_caja] numeric(18) NOT NULL,
+	[tick_empleado] numeric(18) NOT NULL,
+	[tick_tipo_comprobante] numeric(18) NOT NULL,
+	[tick_total_productos] decimal(18,2),
+	[tick_total_descuento] decimal(18,2),
+	[tick_total_descuento_mp] decimal(18,2),
+	[tick_total_envio] decimal(18,2),
+	[tick_total] decimal(18,2)
 );
 
 /* TIPO PAQUETE */
