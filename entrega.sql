@@ -1,11 +1,11 @@
 /*  
 
--- Equipo: GRUPO GENERICO
--- Fecha de entrega: 27.05.2023
--- TP ANUAL GDD 2023 1C
+-- Equipo: MONSTERS INC
+-- Fecha de entrega: 30.05.2024
+-- TP ANUAL GDD 2024 1C
 
--- Ciclo lectivo: 2023
--- Descripción: Migración de Tablas Maestras - Creación Inicial
+-- Ciclo lectivo: 2024
+-- Descripcion: Migracion de Tabla Maestra - Creacion Inicial
 
 */
 
@@ -130,7 +130,6 @@ CREATE TABLE [MONSTERS_INC].[Regla]
     [reg_mismo_producto] bit
 );
 
-
 /* SUPERMERCADO */
 CREATE TABLE [MONSTERS_INC].[Supermercado]
 (
@@ -198,8 +197,8 @@ CREATE TABLE [MONSTERS_INC].[Descuento_Medio_Pago]
 CREATE TABLE [MONSTERS_INC].[Descuento_Medio_Pago_Aplicado]
 (
     [desc_apli_id] numeric(18) IDENTITY NOT NULL,
-    [desc_apli_pago] numeric(18) IDENTITY NOT NULL,
-    [desc_apli_cod_descuento_mp] numeric(18) IDENTITY NOT NULL,
+    [desc_apli_pago] numeric(18) NOT NULL,
+    [desc_apli_cod_descuento_mp] numeric(18) NOT NULL,
     [desc_apli_descuento_aplicado] decimal(18,2)
 );
 
@@ -256,7 +255,7 @@ CREATE TABLE [MONSTERS_INC].[Entrega]
 CREATE TABLE [MONSTERS_INC].[Envio]
 (
     [envio_id] numeric(18) NOT NULL IDENTITY,
-    [envio_ticket_id] numeric(18) NOT NULL,
+    [envio_ticket] numeric(18) NOT NULL,
     [envio_fecha] datetime,
 	[envio_hora_inicio] datetime,
 	[envio_hora_fin] datetime,
@@ -394,7 +393,7 @@ ALTER TABLE [MONSTERS_INC].[Pago]
     ADD CONSTRAINT [PK_Pago] PRIMARY KEY CLUSTERED ([pago_id] ASC);
 
 ALTER TABLE [MONSTERS_INC].[Detalle_Pago] 
-    ADD CONSTRAINT [PK_Detalle_Pago] PRIMARY KEY CLUSTERED ([deta_pago_id] ASC);
+    ADD CONSTRAINT [PK_Detalle_Pago] PRIMARY KEY CLUSTERED ([deta_id] ASC);
 
 ALTER TABLE [MONSTERS_INC].[Tarjeta] 
     ADD CONSTRAINT [PK_Tarjeta] PRIMARY KEY CLUSTERED ([tarj_id] ASC);
@@ -467,7 +466,7 @@ ALTER TABLE [MONSTERS_INC].[Ticket]
 
 ALTER TABLE [MONSTERS_INC].[Ticket]
     ADD CONSTRAINT [FK_Ticket_tick_tipo_comprobante] FOREIGN KEY ([tick_tipo_comprobante]) 
-    REFERENCES [MONSTERS_INC].[Tipo_Componente]([tipo_comp_id]);
+    REFERENCES [MONSTERS_INC].[Tipo_Comprobante]([tipo_comp_id]);
 
 ALTER TABLE [MONSTERS_INC].[Empleado]
     ADD CONSTRAINT [FK_Empleado_empl_sucursal] FOREIGN KEY ([empl_sucursal]) 
@@ -835,7 +834,7 @@ BEGIN
         (us_nombre, us_apellido, us_dni, us_telefono, us_mail, us_fecha_registro, us_fecha_nacimiento)
     SELECT DISTINCT USUARIO_NOMBRE, USUARIO_APELLIDO, USUARIO_DNI, USUARIO_TELEFONO, USUARIO_MAIL, USUARIO_FECHA_REGISTRO, USUARIO_FECHA_NAC
     FROM gd_esquema.Maestra
-    WHERE USUARIO_DNI IS NOT NULL
+    WHERE USUARIO_DNIï¿½ISï¿½NOTï¿½NULL
 END
 GO
 
