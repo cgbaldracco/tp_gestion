@@ -658,8 +658,8 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Promocion
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Promocion]
-        (prom_descripcion, prom_fecha_fin,prom_fecha_fin,prom_regla)
-    SELECT DISTINCT PROMOCION_DESCRIPCION,PROMOCION_FECHA_INICIO,PROMOCION_FECHA_FIN,
+        (prom_id,prom_descripcion, prom_fecha_fin,prom_fecha_fin,prom_regla)
+    SELECT DISTINCT PROMO_CODIGO,PROMOCION_DESCRIPCION,PROMOCION_FECHA_INICIO,PROMOCION_FECHA_FIN,
 	(SELECT TOP 1
         reg_id
         FROM [MONSTERS_INC].[Regla]
@@ -717,81 +717,65 @@ END
 GO
 
 
+/* Promocion Por Producto */
 
-/* DATOS TIPO MOVILIDAD */
-
-CREATE PROCEDURE [GRUPO_GENERICO].Migrar_Tipo_Movilidad
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Promocion_Por_Producto
 AS
 BEGIN
-    INSERT INTO [GRUPO_GENERICO].[Tipo_Movilidad]
-        (tipo_movilidad_descripcion, tipo_movilidad_nombre)
-    SELECT DISTINCT M.REPARTIDOR_TIPO_MOVILIDAD, M.REPARTIDOR_TIPO_MOVILIDAD
-    FROM gd_esquema.Maestra AS M
-    WHERE M.REPARTIDOR_TIPO_MOVILIDAD IS NOT NULL
+    INSERT INTO [MONSTERS_INC].[Promocion_Por_Producto]
+        (prom_prod_producto, prom_prod_promocion)
+    SELECT DISTINCT (select top 1
+           prod_id
+        from [MONSTERS_INC].[Producto]
+        where prod_descripcion = PRODUCTO_DESCRIPCION and prod_nombre = PRODUCTO_NOMBRE) AS prom_prod_producto, 
+		(select top 1
+           prom_id 
+        from [MONSTERS_INC].[Promocion]
+        where prom_descripcion = PROMOCION_DESCRIPCION AND prom_id = PROMO_CODIGO) AS prom_prod_promocion
+    FROM gd_esquema.Maestra
 END
 GO
 
-/* DATOS PROVINCIAS */
+/* CAJA */
 
-CREATE PROCEDURE [GRUPO_GENERICO].Migrar_Provincia
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Caja
 AS
 BEGIN
-    INSERT INTO [GRUPO_GENERICO].[Provincia]
-        (provincia_nombre)
-    SELECT DISTINCT provincia_nombre
-    from(
-        SELECT LOCAL_PROVINCIA as provincia_nombre
-            FROM gd_esquema.Maestra
-            where LOCAL_PROVINCIA IS NOT NULL
-        UNION
-            SELECT DIRECCION_USUARIO_PROVINCIA as provincia_nombre
-            from gd_esquema.Maestra
-            where DIRECCION_USUARIO_PROVINCIA IS NOT NULL
-        UNION
-            SELECT ENVIO_MENSAJERIA_PROVINCIA as provincia_nombre
-            FROM gd_esquema.Maestra
-            where ENVIO_MENSAJERIA_PROVINCIA IS NOT NULL
-    ) as subquery;
-
+    INSERT INTO [MONSTERS_INC].[Caja]
+        (caja_id,caja_tipo, caja_sucursal)
+    SELECT DISTINCT CAJA_NUMERO, CAJA_TIPO, (
+		SELECT TOP 1 sucu_id 
+		FROM Sucursal
+		WHERE sucu_numero = SUCURSAL_NOMBRE and sucu_direccion = SUCURSAL_DIRECCION
+	)
+    FROM gd_esquema.Maestra
+	WHERE CAJA_NUMERO IS NOT NULL AND CAJA_TIPO IS NOT NULL
 END
 GO
 
-/* DATOS PEDIDO ESTADO */
+/* TIPO COMPROBANTE */
 
-CREATE PROCEDURE [GRUPO_GENERICO].Migrar_Pedido_Estado
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Tipo_Comprobante
 AS
 BEGIN
-    INSERT INTO [GRUPO_GENERICO].Pedido_Estado
-        (pedido_estado_nombre)
-    SELECT DISTINCT M.PEDIDO_ESTADO
-    FROM gd_esquema.Maestra AS M
-    WHERE M.PEDIDO_ESTADO IS NOT NULL
+    INSERT INTO [MONSTERS_INC].[Tipo_Comprobante]
+        (tipo_comp_detalle)
+    SELECT DISTINCT TICKET_TIPO_COMPROBANTE
+    FROM gd_esquema.Maestra
+    WHERE TICKET_TIPO_COMPROBANTE IS NOT NULL
 END
 GO
 
-/* DATOS PRODUCTOS */
+/* MEDIO DE PAGO */
 
-CREATE PROCEDURE [GRUPO_GENERICO].Migrar_Producto
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Medio_De_Pago
 AS
 BEGIN
-    INSERT INTO [GRUPO_GENERICO].Producto
-        (prod_id, prod_nombre, prod_descripcion)
-    SELECT DISTINCT M.PRODUCTO_LOCAL_CODIGO, M.PRODUCTO_LOCAL_NOMBRE, M.PRODUCTO_LOCAL_DESCRIPCION
-    FROM gd_esquema.Maestra AS M
-    WHERE M.PRODUCTO_LOCAL_CODIGO IS NOT NULL
-END
-GO
-
-/* DATOS DIAS */
-
-CREATE PROCEDURE [GRUPO_GENERICO].Migrar_dia
-AS
-BEGIN
-    INSERT INTO [GRUPO_GENERICO].Dia
-        (dia_nombre)
-    SELECT DISTINCT HORARIO_LOCAL_DIA
-    from gd_esquema.Maestra
-    WHERE HORARIO_LOCAL_DIA IS NOT NULL
+    INSERT INTO [MONSTERS_INC].Medio_Pago
+        (medio_pago_nombre, medio_pago_tipo)
+    SELECT DISTINCT PAGO_MEDIO_PAGO, PAGO_TIPO_MEDIO_PAGO
+    FROM gd_esquema.Maestra
+    WHERE PAGO_MEDIO_PAGO IS NOT NULL AND PAGO_TIPO_MEDIO_PAGO IS NOT NULL
 END
 GO
 
