@@ -542,6 +542,10 @@ BEGIN
             SELECT SUPER_PROVINCIA as provincia_nombre
             from gd_esquema.Maestra
             where SUPER_PROVINCIA IS NOT NULL 
+		UNION
+			SELECT CLIENTE_PROVINCIA as provincia_nombre
+			from gd_esquema.Maestra
+			where CLIENTE_PROVINCIA IS NOT NULL
     ) as subquery;
 
 END
@@ -571,6 +575,14 @@ BEGIN
                 where prov_nombre =  SUPER_LOCALIDAD) as provincia_id
             from gd_esquema.Maestra
             where SUPER_LOCALIDAD IS NOT NULL
+		UNION
+			SELECT CLIENTE_LOCALIDAD as localidad_nombre,
+                (SELECT top 1
+                    prov_id
+                from [MONSTERS_INC].Provincia
+                where prov_nombre =  CLIENTE_LOCALIDAD) as provincia_id
+            from gd_esquema.Maestra
+            where CLIENTE_LOCALIDAD IS NOT NULL
     ) as subquery;
 END
 GO
