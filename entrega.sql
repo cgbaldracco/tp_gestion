@@ -615,11 +615,11 @@ BEGIN
 	 (SELECT TOP 1
             loca_id
         FROM [MONSTERS_INC].[Localidad]
-        WHERE loca_nombre = SUCURSAL_LOCALIDAD),
+        WHERE loca_nombre = SUCURSAL_LOCALIDAD) as sucu_localidad,
 	 (SELECT TOP 1
             super_id
         FROM [MONSTERS_INC].[SUPERMERCADO]
-        WHERE super_localidad = SUCURSAL_LOCALIDAD)			--MAL, NOSE COMO UNIR() EN TABLA MAESTRA NO HAY SUCURSAL_SUPER
+        WHERE [SUPERMERCADO].super_cuit = SUPER_CUIT) as sucu_supermercado			--Esta bien usar SUPER_CUIT?
     FROM gd_esquema.Maestra;
 END
 GO
