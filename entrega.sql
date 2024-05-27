@@ -630,12 +630,27 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Regla
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Regla]
-        (reg_descripcion, reg_descuento,reg_cantidad_aplicable,reg_cantidad_descuento,reg_cantidad_max,reg_misma_marca,reg_mismo_producto)
-    SELECT DISTINCT REGLA_DESCRIPCION, REGLA_DESCUENTO_APLICABLE_PROD,REGLA_CANT_APLICA_DESCUENTO,REGLA_CANT_APLICA_DESCUENTO,REGLA_CANT_MAX_PROD,REGLA_APLICA_MISMO_PROD
-    FROM  gd_esquema.Maestra;
-														--SIENTO QUE FALTA UN WHERE PARA FILTRAR LOS NOT NULL pero nose que columna seria
+        (reg_descripcion, reg_descuento, reg_cantidad_aplicable, reg_cantidad_descuento, reg_cantidad_max, reg_misma_marca, reg_mismo_producto)
+    SELECT DISTINCT 
+        REGLA_DESCRIPCION, 
+        REGLA_DESCUENTO_APLICABLE_PROD, 
+        REGLA_CANT_APLICA_DESCUENTO, 
+        REGLA_CANT_APLICABLE_REGLA,  
+        REGLA_CANT_MAX_PROD, 
+        REGLA_APLICA_MISMA_MARCA,
+        REGLA_APLICA_MISMO_PROD
+    FROM gd_esquema.Maestra
+    WHERE 
+        REGLA_DESCRIPCION IS NOT NULL AND 
+        REGLA_DESCUENTO_APLICABLE_PROD IS NOT NULL AND 
+        REGLA_CANT_APLICA_DESCUENTO IS NOT NULL AND 
+        REGLA_CANT_APLICABLE_REGLA IS NOT NULL AND   -- Agregué esta línea
+        REGLA_CANT_MAX_PROD IS NOT NULL AND 
+        REGLA_APLICA_MISMA_MARCA IS NOT NULL AND   -- Agregué esta línea
+        REGLA_APLICA_MISMO_PROD IS NOT NULL;
 END
 GO
+
 
 /* PROMOCION */
 
