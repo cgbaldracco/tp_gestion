@@ -663,9 +663,8 @@ BEGIN
 	(SELECT TOP 1
         reg_id
         FROM [MONSTERS_INC].[Regla]
-        WHERE  = )																--NI IDEA
-    FROM  gd_esquema.Maestra;
-														
+        WHERE  reg_descripcion = REGLA_DESCRIPCION)
+    FROM  gd_esquema.Maestra;												
 END
 GO
 
