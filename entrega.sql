@@ -644,9 +644,9 @@ BEGIN
         REGLA_DESCRIPCION IS NOT NULL AND 
         REGLA_DESCUENTO_APLICABLE_PROD IS NOT NULL AND 
         REGLA_CANT_APLICA_DESCUENTO IS NOT NULL AND 
-        REGLA_CANT_APLICABLE_REGLA IS NOT NULL AND   -- Agregué esta línea
+        REGLA_CANT_APLICABLE_REGLA IS NOT NULL AND   
         REGLA_CANT_MAX_PROD IS NOT NULL AND 
-        REGLA_APLICA_MISMA_MARCA IS NOT NULL AND   -- Agregué esta línea
+        REGLA_APLICA_MISMA_MARCA IS NOT NULL AND   
         REGLA_APLICA_MISMO_PROD IS NOT NULL;
 END
 GO
@@ -779,54 +779,52 @@ BEGIN
 END
 GO
 
-/* LOCALIDAD */
+/* CLIENTE */
 
-CREATE PROCEDURE GRUPO_GENERICO.Migrar_Localidad
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Cliente
 AS
 BEGIN
-    INSERT INTO [GRUPO_GENERICO].[Localidad]
-        (localidad_nombre, localidad_provincia_id)
-    SELECT DISTINCT localidad_nombre, provincia_id
-    from(
-       SELECT ENVIO_MENSAJERIA_LOCALIDAD as localidad_nombre,
-                (SELECT top 1
-                    provincia_id
-                from [GRUPO_GENERICO].Provincia
-                where provincia_nombre = ENVIO_MENSAJERIA_PROVINCIA) as provincia_id
-            FROM gd_esquema.Maestra
-            where ENVIO_MENSAJERIA_LOCALIDAD IS NOT NULL
-        UNION
-            SELECT DIRECCION_USUARIO_LOCALIDAD as localidad_nombre,
-                (SELECT top 1
-                    provincia_id
-                from [GRUPO_GENERICO].Provincia
-                where provincia_nombre =  DIRECCION_USUARIO_PROVINCIA) as provincia_id
-            from gd_esquema.Maestra
-            where DIRECCION_USUARIO_LOCALIDAD IS NOT NULL
-        UNION
-            SELECT LOCAL_LOCALIDAD as localidad_nombre,
-                (SELECT top 1
-                    provincia_id
-                from [GRUPO_GENERICO].Provincia
-                where provincia_nombre =  LOCAL_PROVINCIA) as provincia_id
-            FROM gd_esquema.Maestra
-            where LOCAL_LOCALIDAD IS NOT NULL
-    ) as subquery;
-END
-GO
-
-/* DATOS USUARIO */
-CREATE PROCEDURE GRUPO_GENERICO.Migrar_Usuario
-AS
-BEGIN
-    INSERT INTO GRUPO_GENERICO.[Usuario]
-        (us_nombre, us_apellido, us_dni, us_telefono, us_mail, us_fecha_registro, us_fecha_nacimiento)
-    SELECT DISTINCT USUARIO_NOMBRE, USUARIO_APELLIDO, USUARIO_DNI, USUARIO_TELEFONO, USUARIO_MAIL, USUARIO_FECHA_REGISTRO, USUARIO_FECHA_NAC
+    INSERT INTO [MONSTERS_INC].[Cliente]
+        (clie_nombre, clie_apellido, clie_dni, clie_fecha_registro, clie_telefono, clie_mail, clie_fecha_nacimiento, clie_domicilio, clie_localidad)
+    SELECT DISTINCT CLIENTE_NOMBRE, CLIENTE_APELLIDO, CLIENTE_DNI, CLIENTE_FECHA_REGISTRO, CLIENTE_TELEFONO, CLIENTE_MAIL, CLIENTE_FECHA_NACIMIENTO, CLIENTE_DOMICILIO, (
+		SELECT TOP 1 loca_id 
+		FROM Localidad
+		WHERE loca_nombre = CLIENTE_LOCALIDAD
+	)
     FROM gd_esquema.Maestra
-    WHERE USUARIO_DNI�IS�NOT�NULL
+    WHERE CLIENTE_NOMBRE IS NOT NULL 
+	AND CLIENTE_APELLIDO IS NOT NULL
+	AND CLIENTE_DNI IS NOT NULL
+	AND CLIENTE_FECHA_REGISTRO IS NOT NULL
+	AND CLIENTE_TELEFONO IS NOT NULL
+	AND CLIENTE_MAIL IS NOT NULL
+	AND CLIENTE_FECHA_NACIMIENTO IS NOT NULL
+	AND CLIENTE_DOMICILIO IS NOT NULL
 END
 GO
 
+/* Empleado */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Empleado
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Empleado]
+        (empl_nombre, empl_apellido, empl_dni, empl_fecha_registro, empl_telefono, empl_mail, empl_fecha_nacimiento,empl_sucursal)
+    SELECT DISTINCT EMPLEADO_NOMBRE, EMPLEADO_APELLIDO, EMPLEADO_DNI, EMPLEADO_FECHA_REGISTRO, EMPLEADO_TELEFONO , EMPLEADO_MAIL, EMPLEADO_FECHA_NACIMIENTO, (
+		SELECT TOP 1 sucu_id 
+		FROM Sucursal
+		WHERE sucu_numero = SUCURSAL_NOMBRE
+	)
+    FROM gd_esquema.Maestra
+    WHERE EMPLEADO_NOMBRE IS NOT NULL 
+	AND EMPLEADO_APELLIDO IS NOT NULL
+	AND EMPLEADO_DNI IS NOT NULL
+	AND EMPLEADO_FECHA_REGISTRO IS NOT NULL
+	AND EMPLEADO_TELEFONO IS NOT NULL
+	AND EMPLEADO_MAIL IS NOT NULL
+	AND EMPLEADO_FECHA_NACIMIENTO IS NOT NULL
+END
+GO
 
 /* DATOS DIRECCION */
 CREATE PROCEDURE GRUPO_GENERICO.Migrar_Direccion
