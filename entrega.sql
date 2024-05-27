@@ -668,72 +668,51 @@ BEGIN
 END
 GO
 
-/* DATOS CUPON */
+/* CATEGORÍA MAYOR */
 
-CREATE PROCEDURE GRUPO_GENERICO.Migrar_Cupon
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Categoria_Mayor
 AS
 BEGIN
-    INSERT INTO GRUPO_GENERICO.[Cupon]
-        (cup_numero, cup_fecha_alta, cup_fecha_vencimiento, cup_monto, cup_usuario_id, cup_tipo)
-    SELECT DISTINCT CUPON_NRO, CUPON_FECHA_ALTA, CUPON_FECHA_VENCIMIENTO, CUPON_MONTO,
-        ( SELECT TOP 1
-            us_id
-        from [GRUPO_GENERICO].[Usuario]
-        where us_dni = USUARIO_DNI
-        ),
-        ( SELECT TOP 1
-            cupon_tipo_id
-        from [GRUPO_GENERICO].[Cupon_Tipo]
-        where cupon_tipo_nombre = CUPON_TIPO
-        )
+    INSERT INTO [MONSTERS_INC].[Categoria_Mayor]
+        (catm_descripcion)
+    SELECT DISTINCT PRODUCTO_CATEGORIA
     FROM gd_esquema.Maestra
-    WHERE CUPON_NRO IS NOT NULL
+    WHERE PRODUCTO_CATEGORIA IS NOT NULL
 END
 GO
 
-/* DATOS REPARTIDOR */
-CREATE PROCEDURE GRUPO_GENERICO.Migrar_Repartidor
+/* SUB_CATEGORIA */
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Sub_Categoria
 AS
 BEGIN
-    INSERT INTO GRUPO_GENERICO.[Repartidor]
-        (rep_nombre, rep_apellido, rep_dni, rep_telefono, rep_mail, rep_fecha_nacimiento,
-         rep_tipo_movilidad_id, rep_direccion)
-    SELECT DISTINCT REPARTIDOR_NOMBRE, REPARTIDOR_APELLIDO, REPARTIDOR_DNI, REPARTIDOR_TELEFONO, REPARTIDOR_EMAIL, REPARTIDOR_FECHA_NAC,
+    INSERT INTO [MONSTERS_INC].[Subcategoria]
+        (subc_descripcion, subc_categoria_mayor)
+    SELECT DISTINCT PRODUCTO_SUB_CATEGORIA,
         (SELECT TOP 1
-            tipo_movilidad_id
-        FROM [GRUPO_GENERICO].[Tipo_Movilidad]
-        WHERE tipo_movilidad_nombre = REPARTIDOR_TIPO_MOVILIDAD),
-        REPARTIDOR_DIRECION
+            catm_id
+        FROM [MONSTERS_INC].[Categoria_Mayor]
+        WHERE catm_descripcion = PRODUCTO_CATEGORIA)
     FROM gd_esquema.Maestra
-    WHERE REPARTIDOR_DNI IS NOT NULL
+    WHERE PRODUCTO_SUB_CATEGORIA IS NOT NULL
 END
 GO
 
-/* DATOS DIRECCION */
-CREATE PROCEDURE GRUPO_GENERICO.Migrar_Direccion
+/* PRODUCTO */
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Producto
 AS
 BEGIN
-    INSERT INTO GRUPO_GENERICO.[Direccion]
-        (dir_direccion,dir_nombre, dir_usuario_id, dir_localidad_id)
-    SELECT DISTINCT M.DIRECCION_USUARIO_DIRECCION, M.DIRECCION_USUARIO_NOMBRE,
+    INSERT INTO [MONSTERS_INC].[Producto]
+        (prod_descripcion, prod_marca, prod_nombre, prod_precio, prod_subcategoria)
+    SELECT DISTINCT PRODUCTO_DESCRIPCION, PRODUCTO_MARCA, PRODUCTO_NOMBRE, PRODUCTO_PRECIO,
         ( select top 1
-            us_id
-        from [GRUPO_GENERICO].[Usuario]
-        where us_dni = M.USUARIO_DNI ) as USUARIO_ID,
-        ( select top 1
-            localidad_id
-        from [GRUPO_GENERICO].[Localidad]
-        where localidad_nombre = M.DIRECCION_USUARIO_LOCALIDAD
-            and localidad_provincia_id = (select top 1
-                provincia_id
-            from [GRUPO_GENERICO].Provincia
-            where provincia_nombre = M.DIRECCION_USUARIO_PROVINCIA )) as LOCALIDAD_ID
+            subc_id
+        from [MONSTERS_INC].[Subcategoria]
+        where subc_descripcion = PRODUCTO_SUB_CATEGORIA)
     from gd_esquema.Maestra as M
-    where M.DIRECCION_USUARIO_DIRECCION IS NOT NULL
-        AND ( select top 1
-            us_id
-        from [GRUPO_GENERICO].[Usuario]
-        where us_dni = M.USUARIO_DNI ) IS NOT NULL
+    where PRODUCTO_DESCRIPCION IS NOT NULL
+        AND PRODUCTO_MARCA IS NOT NULL
+		AND PRODUCTO_NOMBRE IS NOT NULL
+		AND PRODUCTO_PRECIO IS NOT NULL
 END
 GO
 
