@@ -159,8 +159,9 @@ CREATE TABLE [MONSTERS_INC].[Sucursal]
 CREATE TABLE [MONSTERS_INC].[Item_Ticket]
 (
     [item_tick_id] numeric(18) IDENTITY NOT NULL,
-    [item_tick_ticket] numeric(18),
-    [item_tick_producto] numeric(18),
+    [item_tick_ticket] numeric(18) NOT NULL,
+    [item_tick_producto] numeric(18) NOT NULL,
+	[item_tick_promocion] numeric(18) NOT NULL,
     [item_tick_cantidad] decimal(18,0),
     [item_tick_total] decimal(18,2),
     [item_tick_descuento_aplicado] decimal(18,2)
@@ -170,7 +171,8 @@ CREATE TABLE [MONSTERS_INC].[Item_Ticket]
 CREATE TABLE [MONSTERS_INC].[Caja]
 (
     [caja_id] numeric(18) IDENTITY NOT NULL,
-    [caja_tipo] nvarchar(10)
+    [caja_tipo] nvarchar(10),
+	[caja_sucursal] numeric(18) NOT NULL
 );
 
 /* TIPO COMPROBANTE */
@@ -185,11 +187,20 @@ CREATE TABLE [MONSTERS_INC].[Descuento_Medio_Pago]
 (
     [desc_id] numeric(18) IDENTITY NOT NULL,
     [desc_descripcion] nvarchar(100),
-    [desc_medio_pago] numeric(18),
+    [desc_medio_pago] numeric(18) NOT NULL,
     [desc_fecha_inicio] datetime,
 	[desc_fecha_fin] datetime,
 	[desc_porcentaje] decimal(18,0),
 	[desc_tope] decimal(18,0)
+);
+
+/* DESCUENTO MEDIO PAGO APLICADO */
+CREATE TABLE [MONSTERS_INC].[Descuento_Medio_Pago_Aplicado]
+(
+    [desc_apli_id] numeric(18) IDENTITY NOT NULL,
+    [desc_apli_pago] numeric(18) IDENTITY NOT NULL,
+    [desc_apli_cod_descuento_mp] numeric(18) IDENTITY NOT NULL,
+    [desc_apli_descuento_aplicado] decimal(18,2)
 );
 
 /* MEDIO PAGO */
@@ -200,503 +211,315 @@ CREATE TABLE [MONSTERS_INC].[Medio_Pago]
     [medio_pago_nombre] nvarchar(50)
 );
 
-/* TIPO PAQUETE */
-CREATE TABLE [GRUPO_GENERICO].[Tipo_Paquete]
-(
-    [tipo_paquete_id] nvarchar(50) NOT NULL,
-    [tipo_paquete_alto_max] decimal(18,2),
-    [tipo_paquete_ancho_max] decimal(18,2),
-    [tipo_paquete_largo_max] decimal(18,2),
-    [tipo_paquete_peso_max] decimal(18,2),
-    [tipo_paquete_precio] decimal(18,2)
-);
-
-/* ENVIO MENSAJERIA */
-CREATE TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-(
-    [env_mensajeria_id] numeric(18) NOT NULL,
-    [env_mensajeria_usuario_id] numeric(18) NOT NULL,
-    [env_mensajeria_tipo_paquete] nvarchar(50),
-    [env_mensajeria_dir_orig] nvarchar(255),
-    [env_mensajeria_dir_dest] nvarchar(255),
-    [env_mensajeria_localidad_id] numeric(18) NOT NULL,
-    [env_mensajeria_valor_asegurado] decimal(18,2),
-    [env_mensajeria_precio_envio] decimal(18,2),
-    [env_mensajeria_precio_seguro] decimal(18,2),
-    [env_mensajeria_propina] decimal(18,2),
-    [env_mensajeria_total] decimal(18,2),
-    [env_mensajeria_observ] nvarchar(255),
-    [env_mensajeria_fecha] datetime,
-    [env_mensajeria_fecha_entrega] datetime,
-    [env_mensajeria_tiempo_estimado] decimal(18,2),
-    [env_mensajeria_calificacion] decimal(18),
-    [env_mensajeria_estado_id] numeric(18),
-    [env_mensajeria_km] decimal(18,2),
-    [env_mensajeria_repartidor] numeric(18) NOT NULL,
-    [env_mensajeria_medio_pago] numeric(18) NOT NULL
-);
-
-/* ENVIO MENSAJERIA ESTADO */
-CREATE TABLE [GRUPO_GENERICO].[Env_mensajeria_estado]
-(
-    [env_mensajeria_est_id] numeric(18) NOT NULL identity,
-    [env_mensajeria_est_descripcion] nvarchar(255)
-);
-
-/* TIPO TARJETA */
-CREATE TABLE [GRUPO_GENERICO].[Tipo_Tarjeta]
-(
-    [tipo_tarjeta_id] numeric(8) NOT NULL identity,
-    [tipo_tarjeta_nombre] nvarchar(30)
-);
-
-/* MARCA TARJETA */
-CREATE TABLE [GRUPO_GENERICO].[Marca_Tarjeta]
-(
-    [marca_tarjeta_id] numeric(8) NOT NULL identity,
-    [marca_tarjeta_nombre] nvarchar(30)
-);
-
-/* MEDIO PAGO*/
-CREATE TABLE [GRUPO_GENERICO].[Medio_Pago]
-(
-    [medio_pago_id] numeric(18) NOT NULL identity,
-    [medio_pago_tipo_id] numeric(18) NOT NULL,
-    [medio_pago_tarjeta] numeric(18) NULL
-);
-
-/* TIPO MEDIO PAGO */
-CREATE TABLE [GRUPO_GENERICO].[Tipo_Medio_Pago]
-(
-    [tipo_medio_pago_id] numeric(18) NOT NULL IDENTITY,
-    [tipo_medio_pago_nombre] nvarchar(30)
-);
-
 /* TARJETA */
-CREATE TABLE [GRUPO_GENERICO].[Tarjeta]
+CREATE TABLE [MONSTERS_INC].[Tarjeta]
 (
-    [tarjeta_id] numeric(18) NOT NULL identity,
-    [tarjeta_tipo] numeric(8) NULL,
-    [tarjeta_marca] numeric(8) NOT NULL,
-    [tarjeta_numero] nvarchar(50),
-    [tarjeta_usuario_id] numeric(18) NOT NULL,
-    [tarjeta_nombre] nvarchar(50)
+    [tarj_id] numeric(18) NOT NULL IDENTITY,
+    [tarj_numero] nvarchar(50),
+    [tarj_vencimiento_tarjeta] datetime
 );
 
-/* USUARIO */
-CREATE TABLE [GRUPO_GENERICO].[Usuario]
+/* DETALLE PAGO */
+CREATE TABLE [MONSTERS_INC].[Detalle_Pago]
 (
-    [us_id] numeric(18) NOT NULL identity,
-    [us_nombre] nvarchar(255),
-    [us_apellido] nvarchar(255),
-    [us_dni] decimal (18),
-    [us_telefono] decimal(18),
-    [us_mail] nvarchar(255),
-    [us_fecha_registro] datetime2(3),
-    [us_fecha_nacimiento] date
+    [deta_id] numeric(18) NOT NULL IDENTITY,
+    [deta_cliente] numeric(18) NOT NULL,
+    [deta_tarjeta] numeric(18) NOT NULL
 );
 
-/* CUPON */
-CREATE TABLE [GRUPO_GENERICO].[Cupon]
+/* PAGO */
+CREATE TABLE [MONSTERS_INC].[Pago]
 (
-    [cup_numero] numeric(18) NOT NULL,
-    [cup_usuario_id] numeric(18) NOT NULL,
-    [cup_fecha_alta] datetime,
-    [cup_fecha_vencimiento] datetime,
-    [cup_monto] decimal(18,2),
-    [cup_tipo] numeric(18)
+    [pago_id] numeric(18) NOT NULL IDENTITY,
+    [pago_fecha] datetime,
+    [pago_medio_pago] numeric(18) NOT NULL,
+	[pago_detalle] numeric(18),
+	[pago_importe] decimal(18,2),
+	[pago_ticket] numeric(18)
 );
 
-/* PEDIDO CUPON */
-CREATE TABLE [GRUPO_GENERICO].[Pedido_Cupon]
+/* ESTADO */
+CREATE TABLE [MONSTERS_INC].[Estado]
 (
-    [ped_cup_cupon_numero] numeric(18) NOT NULL,
-    [ped_cup_pedido_numero] numeric(18) NOT NULL,
-    [ped_cup_fecha_hora_uso] datetime
+    [esta_id] numeric(18) NOT NULL IDENTITY,
+    [esta_descripcion] nvarchar(255),
 );
 
-/* CUPON TIPO  */
-CREATE TABLE [GRUPO_GENERICO].[Cupon_Tipo]
+/* ENTREGA */
+CREATE TABLE [MONSTERS_INC].[Entrega]
 (
-    [cupon_tipo_id] numeric(18) IDENTITY NOT NULL,
-    [cupon_tipo_nombre] nvarchar(50)
+    [entr_id] numeric(18) NOT NULL IDENTITY,
+    [entr_fecha_hora_entrega] datetime
 );
 
-/* CUPON RECLAMO */
-CREATE TABLE [GRUPO_GENERICO].[Cupon_Reclamo]
+/* ENVIO */
+CREATE TABLE [MONSTERS_INC].[Envio]
 (
-    [cup_rec_numero] numeric(18) NOT NULL,
-    [cup_rec_cupon_numero] numeric(18) NOT NULL
+    [envio_id] numeric(18) NOT NULL IDENTITY,
+    [envio_ticket_id] numeric(18) NOT NULL,
+    [envio_fecha] datetime,
+	[envio_hora_inicio] datetime,
+	[envio_hora_fin] datetime,
+	[envio_cliente] numeric(18) NOT NULL,
+	[envio_costo] numeric(18),
+	[envio_estado] numeric(18) NOT NULL,
+	[envio_entrega] numeric(18)
 );
 
-/* RECLAMO */
-CREATE TABLE [GRUPO_GENERICO].[Reclamo]
+/* CLIENTE */
+CREATE TABLE [MONSTERS_INC].[Cliente]
 (
-    [reclamo_nro] NUMERIC(18) NOT NULL,
-    [reclamo_usuario_id] NUMERIC(18),
-    [reclamo_pedido_id] NUMERIC(18),
-    [reclamo_tipo_id] NUMERIC(18),
-    [reclamo_operador_id] NUMERIC(18),
-    [reclamo_estado_id] NUMERIC(18),
-    [reclamo_cupon_id] NUMERIC(18),
-    [reclamo_descripcion] NVARCHAR(255),
-    [reclamo_fecha] DATETIME,
-    [reclamo_fecha_solucion] DATETIME,
-    [reclamo_solucion] NVARCHAR(255),
-    [reclamo_calificacion] DECIMAL(18)
+    [clie_id] numeric(18) NOT NULL IDENTITY,
+    [clie_dni] numeric(18),
+    [clie_nombre] nvarchar(50),
+	[clie_apellido] nvarchar(50),
+	[clie_domicilio] nvarchar(50),
+	[clie_localidad] numeric(18),
+	[clie_fecha_nacimiento] datetime,
+	[clie_fecha_registro] datetime,
+	[clie_mail] nvarchar(50),
+	[clie_telefono] numeric(18)
 );
 
-
-/* RECLAMO ESTADO */
-CREATE TABLE [GRUPO_GENERICO].[Reclamo_Estado]
+/* LOCALIDAD */
+CREATE TABLE [MONSTERS_INC].[Localidad]
 (
-    [reclamo_estado_id] NUMERIC(18) IDENTITY NOT NULL,
-    [reclamo_estado_nombre] NVARCHAR(50)
+    [loca_id] numeric(18) NOT NULL IDENTITY,
+    [loca_nombre] nvarchar(50),
+	[loca_provincia] numeric(18) NOT NULL 
 );
 
-
-/* RECLAMO TIPO */
-CREATE TABLE [GRUPO_GENERICO].[Reclamo_Tipo]
+/* PROVINCIA */
+CREATE TABLE [MONSTERS_INC].[Provincia]
 (
-    [reclamo_tipo_id] NUMERIC(18) IDENTITY NOT NULL,
-    [reclamo_tipo_nombre] NVARCHAR(50)
+    [prov_id] numeric(18) NOT NULL IDENTITY,
+    [prov_nombre] nvarchar(50)
 );
 
-
-/* OPERADOR RECLAMO */
-CREATE TABLE [GRUPO_GENERICO].[Operador_Reclamo]
+/* EMPLEADO */
+CREATE TABLE [MONSTERS_INC].[Empleado]
 (
-    [operador_rec_id] NUMERIC(18) IDENTITY NOT NULL,
-    [operador_rec_nombre] NVARCHAR(255),
-    [operador_rec_apellido] NVARCHAR(255),
-    [operador_rec_dni] NUMERIC(18),
-    [operador_rec_telefono] NUMERIC(18),
-    [operador_rec_direccion] NVARCHAR(255),
-    [operador_rec_mail] NVARCHAR(255),
-    [operador_rec_fecha_nac] DATE
+    [empl_id] numeric(18) NOT NULL IDENTITY,
+    [empl_sucursal] numeric(18) NOT NULL,
+    [empl_nombre] nvarchar(50),
+	[empl_apellido] nvarchar(50),
+	[empl_dni] numeric(18),
+	[empl_fecha_registro] datetime,
+	[empl_telefono] numeric(18),
+	[empl_mail] nvarchar(50),
+	[empl_fecha_nacimiento] datetime
 );
 
-/* LOCAL */
-CREATE TABLE [GRUPO_GENERICO].[Local]
+/* TICKET */
+CREATE TABLE [MONSTERS_INC].[Ticket]
 (
-    [local_id] NUMERIC(18) IDENTITY NOT NULL,
-    [local_nom] NVARCHAR(100),
-    [local_tip] NUMERIC(8) NOT NULL,
-    [local_categ] NUMERIC(8) NULL,
-    [local_localidad_id] NUMERIC(18) NOT NULL,
-    [local_direc] NVARCHAR(255),
-    [local_descrip] NVARCHAR(255)
-);
-
-
-/* CATEGORIA LOCAL */
-CREATE TABLE [GRUPO_GENERICO].[Categoria_Local]
-(
-    [cat_id] NUMERIC(8) IDENTITY NOT NULL,
-    [cat_nombre] NVARCHAR(50),
-    [cat_tipo] NUMERIC(8) NOT NULL
-);
-
-
-/* TIPO LOCAL */
-CREATE TABLE [GRUPO_GENERICO].[Tipo_Local]
-(
-    [tipo_id] NUMERIC(8) IDENTITY NOT NULL,
-    [tipo_nombre] NVARCHAR(50)
-);
-
-
-/* HORARIO DIA LOCAL */
-CREATE TABLE [GRUPO_GENERICO].[Horario_Dia_Local]
-(
-    [hordialoc_id] NUMERIC(18) NOT NULL IDENTITY,
-    [hordialoc_local_id] NUMERIC(18) NOT NULL,
-    [hordialoc_dia] NUMERIC(18) NOT NULL,
-    [hordialoc_hora_apertura] DECIMAL(18),
-    [hordialoc_hora_cierre] DECIMAL(18)
+    [tick_id] numeric(18) NOT NULL IDENTITY,
+    [tick_fecha_hora] datetime,
+	[tick_caja] numeric(18) NOT NULL,
+	[tick_empleado] numeric(18) NOT NULL,
+	[tick_tipo_comprobante] numeric(18) NOT NULL,
+	[tick_total_productos] decimal(18,2),
+	[tick_total_descuento] decimal(18,2),
+	[tick_total_descuento_mp] decimal(18,2),
+	[tick_total_envio] decimal(18,2),
+	[tick_total] decimal(18,2)
 );
 
 /* CONSTRAINT GENERATION - PRIMARY KEYS */
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido]
-    ADD CONSTRAINT [PK_Pedido] PRIMARY KEY CLUSTERED ([ped_numero] ASC)
+ALTER TABLE [MONSTERS_INC].[Categoria_Mayor]
+    ADD CONSTRAINT [PK_Categoria_Mayor] PRIMARY KEY CLUSTERED ([catm_id] ASC)
 
-ALTER TABLE [GRUPO_GENERICO].[Marca_Tarjeta]
-    ADD CONSTRAINT [PK_Marca_Tarjeta] PRIMARY KEY CLUSTERED ([marca_tarjeta_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Subcategoria]
+    ADD CONSTRAINT [PK_Subcategoria] PRIMARY KEY CLUSTERED ([subc_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Tarjeta]
-    ADD CONSTRAINT [PK_Tarjeta] PRIMARY KEY CLUSTERED ([tarjeta_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Producto]
+    ADD CONSTRAINT [PK_Producto] PRIMARY KEY CLUSTERED ([prod_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Tipo_Tarjeta]
-    ADD CONSTRAINT [PK_Tipo_Tarjeta] PRIMARY KEY CLUSTERED ([tipo_tarjeta_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Promocion_Por_Producto]
+    ADD CONSTRAINT PK_Promocion_Por_Producto PRIMARY KEY CLUSTERED ([prom_prod_promocion] ASC, [prom_prod_producto] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-    ADD CONSTRAINT [PK_Envio_Mensajeria] PRIMARY KEY CLUSTERED ([env_mensajeria_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Promocion]
+    ADD CONSTRAINT [PK_Promocion] PRIMARY KEY CLUSTERED ([prom_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Direccion]
-    ADD CONSTRAINT [PK_Direccion] PRIMARY KEY CLUSTERED ([dir_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Regla]
+    ADD CONSTRAINT [PK_Regla] PRIMARY KEY CLUSTERED ([reg_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Localidad]
-    ADD CONSTRAINT [PK_Localidad] PRIMARY KEY CLUSTERED ([localidad_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Supermercado]
+    ADD CONSTRAINT [PK_Supermercado] PRIMARY KEY CLUSTERED ([super_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Provincia] 
-    ADD CONSTRAINT [PK_Provincia] PRIMARY KEY CLUSTERED ([provincia_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Sucursal]
+    ADD CONSTRAINT [PK_Sucursal] PRIMARY KEY CLUSTERED ([sucu_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Tipo_Movilidad] 
-    ADD CONSTRAINT [PK_Tipo_Movilidad] PRIMARY KEY CLUSTERED ([tipo_movilidad_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Item_Ticket] 
+    ADD CONSTRAINT [PK_Item_Ticket] PRIMARY KEY CLUSTERED ([item_tick_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Repartidor] 
-    ADD CONSTRAINT [PK_Repartidor] PRIMARY KEY CLUSTERED ([rep_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Caja] 
+    ADD CONSTRAINT [PK_Caja] PRIMARY KEY CLUSTERED ([caja_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Rep_Localidad_Activa]
-    ADD CONSTRAINT PK_Rep_Localidad_Activa PRIMARY KEY CLUSTERED ([rep_localidad_act_loc_id] ASC, [rep_localidad_act_rep_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Tipo_Comprobante] 
+    ADD CONSTRAINT [PK_Tipo_Comprobante] PRIMARY KEY CLUSTERED ([tipo_comp_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio]
-    ADD CONSTRAINT PK_Envio PRIMARY KEY CLUSTERED ([env_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Descuento_Medio_Pago]
+    ADD CONSTRAINT [PK_Descuento_Medio_Pago] PRIMARY KEY CLUSTERED ([desc_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido_Estado]
-    ADD CONSTRAINT PK_Pedido_Estado PRIMARY KEY CLUSTERED ([pedido_estado_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Medio_Pago]
+    ADD CONSTRAINT [PK_Medio_Pago] PRIMARY KEY CLUSTERED ([medio_pago_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Producto]
-    ADD CONSTRAINT PK_Producto_ProductoID PRIMARY KEY CLUSTERED ([prod_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Ticket]
+    ADD CONSTRAINT [PK_Ticket] PRIMARY KEY CLUSTERED ([tick_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Dia]
-    ADD CONSTRAINT PK_Dia_ID PRIMARY KEY CLUSTERED ([dia_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Empleado]
+    ADD CONSTRAINT [PK_Empleado] PRIMARY KEY CLUSTERED ([empl_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Producto_local]
-    ADD CONSTRAINT PK_Producto_Local_ProductoID PRIMARY KEY CLUSTERED ([prod_loc_producto_id] ASC, [prod_loc_local_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Localidad]
+    ADD CONSTRAINT [PK_Localidad] PRIMARY KEY CLUSTERED ([loca_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Item_Pedido]
-    ADD CONSTRAINT PK_Item_Pedido_PedidoNumero PRIMARY KEY ([item_ped_id] ASC,[item_ped_pedido_numero] ASC,[item_ped_prod_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Provincia]
+    ADD CONSTRAINT [PK_Provincia] PRIMARY KEY CLUSTERED ([prov_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Medio_Pago] 
-    ADD CONSTRAINT [PK_Medio_Pago_Id] PRIMARY KEY CLUSTERED ([medio_pago_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Cliente] 
+    ADD CONSTRAINT [PK_Cliente] PRIMARY KEY CLUSTERED ([clie_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Usuario] 
-    ADD CONSTRAINT [PK_Us_Id] PRIMARY KEY CLUSTERED ([us_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Envio] 
+    ADD CONSTRAINT [PK_Envio] PRIMARY KEY CLUSTERED ([envio_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Cupon] 
-    ADD CONSTRAINT [PK_Cupon_Numero] PRIMARY KEY CLUSTERED ([cup_numero] ASC);
+ALTER TABLE [MONSTERS_INC].[Entrega] 
+    ADD CONSTRAINT [PK_Entrega] PRIMARY KEY CLUSTERED ([entr_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido_Cupon] 
-    ADD CONSTRAINT [PK_Ped_Cup_Cupon_Numero] PRIMARY KEY CLUSTERED ([ped_cup_cupon_numero] ASC, [ped_cup_pedido_numero] ASC);
+ALTER TABLE [MONSTERS_INC].[Estado] 
+    ADD CONSTRAINT [PK_Estado] PRIMARY KEY CLUSTERED ([esta_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Cupon_Tipo] 
-    ADD CONSTRAINT [PK_Cupon_Tipo_Id] PRIMARY KEY CLUSTERED ([cupon_tipo_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Pago] 
+    ADD CONSTRAINT [PK_Pago] PRIMARY KEY CLUSTERED ([pago_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Cupon_Reclamo] 
-    ADD CONSTRAINT [PK_Cup_Rec_Cupon_Numero] PRIMARY KEY CLUSTERED ([cup_rec_numero] ASC);
+ALTER TABLE [MONSTERS_INC].[Detalle_Pago] 
+    ADD CONSTRAINT [PK_Detalle_Pago] PRIMARY KEY CLUSTERED ([deta_pago_id] ASC);
 
-ALTER TABLE [GRUPO_GENERICO].[Reclamo_Estado] 
-    ADD CONSTRAINT [PK_Reclamo_Estado] PRIMARY KEY CLUSTERED ([reclamo_estado_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo_Tipo] 
-    ADD CONSTRAINT [PK_Reclamo_Tipo] PRIMARY KEY CLUSTERED ([reclamo_tipo_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Operador_Reclamo] 
-    ADD CONSTRAINT [PK_Operador_Reclamo] PRIMARY KEY CLUSTERED ([operador_rec_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Tipo_Local] 
-    ADD CONSTRAINT [PK_Tipo_Local] PRIMARY KEY CLUSTERED ([tipo_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Horario_Dia_Local] 
-    ADD CONSTRAINT [PK_Horario_Dia_Local] PRIMARY KEY CLUSTERED ([hordialoc_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo] 
-    ADD CONSTRAINT [PK_Reclamo] PRIMARY KEY CLUSTERED ([reclamo_nro] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Local] 
-    ADD CONSTRAINT [PK_Local] PRIMARY KEY CLUSTERED ([local_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Categoria_Local] 
-    ADD CONSTRAINT [PK_Categoria_Local] PRIMARY KEY CLUSTERED ([cat_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Tipo_Paquete]
-    ADD CONSTRAINT [PK_Tipo_Paquete] PRIMARY KEY CLUSTERED ([tipo_paquete_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Tipo_Medio_Pago]
-    ADD CONSTRAINT [PK_Tipo_Medio_Pago] PRIMARY KEY CLUSTERED ([tipo_medio_pago_id] ASC);
-
-ALTER TABLE [GRUPO_GENERICO].[Env_mensajeria_estado]
-    ADD CONSTRAINT [PK_Env_Mensajeria_Estado] PRIMARY KEY CLUSTERED ([env_mensajeria_est_id] ASC);
+ALTER TABLE [MONSTERS_INC].[Tarjeta] 
+    ADD CONSTRAINT [PK_Tarjeta] PRIMARY KEY CLUSTERED ([tarj_id] ASC);
 
 /* CONSTRAINT GENERATION - FOREIGN KEYS */
 
-ALTER TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-    ADD CONSTRAINT [FK_Envio_Mensajeria_env_mensajeria_localidad_id] FOREIGN KEY ([env_mensajeria_localidad_id])
-    REFERENCES [GRUPO_GENERICO].[Localidad]([localidad_id]);
+ALTER TABLE [MONSTERS_INC].[Subcategoria]
+    ADD CONSTRAINT [FK_Subcategoria_subc_categoria_mayor] FOREIGN KEY ([subc_categoria_mayor])
+    REFERENCES [MONSTERS_INC].[Categoria_Mayor]([catm_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-    ADD CONSTRAINT [FK_Envio_Mensajeria_env_mensajeria_repartidor] FOREIGN KEY ([env_mensajeria_repartidor])
-    REFERENCES [GRUPO_GENERICO].[Repartidor]([rep_id]);
+ALTER TABLE [MONSTERS_INC].[Producto]
+    ADD CONSTRAINT [FK_Producto_prod_subcategoria] FOREIGN KEY ([prod_subcategoria])
+    REFERENCES [MONSTERS_INC].[Subcategoria]([subc_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-    ADD CONSTRAINT [FK_Envio_Mensajeria_env_mensajeria_medio_pago] FOREIGN KEY ([env_mensajeria_medio_pago])
-    REFERENCES [GRUPO_GENERICO].[Medio_Pago]([medio_pago_id]);
+ALTER TABLE [MONSTERS_INC].[Promocion_Por_Producto]
+    ADD CONSTRAINT [FK_Promocion_Por_Producto_prom_prod_promocion] FOREIGN KEY ([prom_prod_promocion])
+    REFERENCES [MONSTERS_INC].[Promocion]([prom_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-    ADD CONSTRAINT [FK_Envio_Mensajeria_env_mensajeria_usuario_id] FOREIGN KEY ([env_mensajeria_usuario_id])
-    REFERENCES [GRUPO_GENERICO].[Usuario]([us_id]);
+ALTER TABLE [MONSTERS_INC].[Promocion_Por_Producto]
+    ADD CONSTRAINT [FK_Promocion_Por_Producto_prom_prod_producto] FOREIGN KEY ([prom_prod_producto])
+    REFERENCES [MONSTERS_INC].[Producto]([prod_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-    ADD CONSTRAINT [FK_Envio_Mensajeria_env_mensajeria_tipo_paquete] FOREIGN KEY ([env_mensajeria_tipo_paquete])
-    REFERENCES [GRUPO_GENERICO].[Tipo_Paquete]([tipo_paquete_id]);
+ALTER TABLE [MONSTERS_INC].[Promocion]
+    ADD CONSTRAINT [FK_Promocion_prom_regla] FOREIGN KEY ([prom_regla])
+    REFERENCES [MONSTERS_INC].[Regla]([reg_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio_Mensajeria]
-    ADD CONSTRAINT [FK_Envio_Mensajeria_Estado_Id] FOREIGN KEY ([env_mensajeria_estado_id])
-    REFERENCES [GRUPO_GENERICO].[Env_mensajeria_estado](env_mensajeria_est_id);
+ALTER TABLE [MONSTERS_INC].[Supermercado]
+    ADD CONSTRAINT [FK_Supermercado_super_localidad] FOREIGN KEY ([super_localidad])
+    REFERENCES [MONSTERS_INC].[Localidad](loca_id);
 
-ALTER TABLE [GRUPO_GENERICO].[Direccion]
-    ADD CONSTRAINT [FK_Direccion_dir_localidad_ID] FOREIGN KEY ([dir_localidad_id])
-    REFERENCES [GRUPO_GENERICO].[Localidad]([localidad_id]);
+ALTER TABLE [MONSTERS_INC].[Localidad]
+    ADD CONSTRAINT [FK_Localidad_loca_provincia] FOREIGN KEY ([loca_provincia])
+    REFERENCES [MONSTERS_INC].[Provincia]([prov_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Repartidor] 
-    ADD CONSTRAINT [FK_Repartidor_Movilidad] FOREIGN KEY ([rep_tipo_movilidad_id])
-    REFERENCES [GRUPO_GENERICO].[Tipo_Movilidad]([tipo_movilidad_id]);
+ALTER TABLE [MONSTERS_INC].[Sucursal] 
+    ADD CONSTRAINT [FK_Sucursal_sucu_localidad] FOREIGN KEY ([sucu_localidad])
+    REFERENCES [MONSTERS_INC].[Localidad]([loca_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Rep_Localidad_Activa]
-    ADD CONSTRAINT [FK_Rep_Localidad_Activa_Localidad] FOREIGN KEY ([rep_localidad_act_loc_id])
-    REFERENCES [GRUPO_GENERICO].[Localidad]([localidad_id]);
+ALTER TABLE [MONSTERS_INC].[Sucursal]
+    ADD CONSTRAINT [FK_Sucursal_sucu_supermercado] FOREIGN KEY ([sucu_supermercado])
+    REFERENCES [MONSTERS_INC].[Supermercado]([super_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Rep_Localidad_Activa]
-    ADD CONSTRAINT [FK_Rep_Localidad_Activa_Repartidor] FOREIGN KEY ([rep_localidad_act_rep_id])
-    REFERENCES [GRUPO_GENERICO].[Repartidor]([rep_id]);
+ALTER TABLE [MONSTERS_INC].[Caja]
+    ADD CONSTRAINT [FK_Caja_caja_sucursal] FOREIGN KEY ([caja_sucursal])
+    REFERENCES [MONSTERS_INC].[Sucursal]([sucu_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio]
-    ADD CONSTRAINT FK_Envio_Direccion FOREIGN KEY ([env_dir_id]) 
-    REFERENCES [GRUPO_GENERICO].[Direccion]([dir_id]);
+ALTER TABLE [MONSTERS_INC].[Item_Ticket]
+    ADD CONSTRAINT [FK_Item_Ticket_item_tick_ticket] FOREIGN KEY ([item_tick_ticket]) 
+    REFERENCES [MONSTERS_INC].[Ticket]([tick_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Envio]
-    ADD CONSTRAINT FK_Envio_Repartidor FOREIGN KEY ([env_repartidor]) 
-    REFERENCES [GRUPO_GENERICO].[Repartidor]([rep_id]);
+ALTER TABLE [MONSTERS_INC].[Item_Ticket]
+    ADD CONSTRAINT [FK_Item_Ticket_item_tick_producto] FOREIGN KEY ([item_tick_producto]) 
+    REFERENCES [MONSTERS_INC].[Producto]([prod_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido]
-    ADD CONSTRAINT FK_Pedido_Usuario FOREIGN KEY ([ped_usuario]) 
-    REFERENCES [GRUPO_GENERICO].[Usuario]([us_id]);
+ALTER TABLE [MONSTERS_INC].[Item_Ticket]
+    ADD CONSTRAINT [FK_Item_Ticket_item_tick_promocion] FOREIGN KEY ([item_tick_promocion]) 
+    REFERENCES [MONSTERS_INC].[Promocion]([prom_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido]
-    ADD CONSTRAINT FK_Pedido_Local FOREIGN KEY ([ped_local]) 
-    REFERENCES [GRUPO_GENERICO].[Local]([local_id]);
+ALTER TABLE [MONSTERS_INC].[Descuento_Medio_Pago]
+    ADD CONSTRAINT [FK_Descuento_Medio_Pago_desc_medio_pago] FOREIGN KEY ([desc_medio_pago]) 
+    REFERENCES [MONSTERS_INC].[Medio_Pago]([medio_pago_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido]
-    ADD CONSTRAINT FK_Pedido_MedPago FOREIGN KEY ([ped_med_pago]) 
-    REFERENCES [GRUPO_GENERICO].[Medio_Pago]([medio_pago_id]);
+ALTER TABLE [MONSTERS_INC].[Ticket]
+    ADD CONSTRAINT [FK_Ticket_tick_caja] FOREIGN KEY ([tick_caja]) 
+    REFERENCES [MONSTERS_INC].[Caja]([caja_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido]
-    ADD CONSTRAINT FK_Pedido_Envio FOREIGN KEY ([ped_envio]) 
-    REFERENCES [GRUPO_GENERICO].[Envio]([env_id]);
+ALTER TABLE [MONSTERS_INC].[Ticket]
+    ADD CONSTRAINT [FK_Ticket_tick_empleado] FOREIGN KEY ([tick_empleado]) 
+    REFERENCES [MONSTERS_INC].[Empleado]([empl_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido]
-    ADD CONSTRAINT FK_Pedido_Estado FOREIGN KEY ([ped_estado_id]) 
-    REFERENCES [GRUPO_GENERICO].[Pedido_Estado]([pedido_estado_id]);
+ALTER TABLE [MONSTERS_INC].[Ticket]
+    ADD CONSTRAINT [FK_Ticket_tick_tipo_comprobante] FOREIGN KEY ([tick_tipo_comprobante]) 
+    REFERENCES [MONSTERS_INC].[Tipo_Componente]([tipo_comp_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Producto_local]
-    ADD CONSTRAINT FK_Producto_Local_Producto FOREIGN KEY ([prod_loc_producto_id]) 
-    REFERENCES [GRUPO_GENERICO].[Producto]([prod_id]);
+ALTER TABLE [MONSTERS_INC].[Empleado]
+    ADD CONSTRAINT [FK_Empleado_empl_sucursal] FOREIGN KEY ([empl_sucursal]) 
+    REFERENCES [MONSTERS_INC].[Sucursal]([sucu_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Producto_local]
-    ADD CONSTRAINT FK_Producto_Local_Local FOREIGN KEY ([prod_loc_local_id]) 
-    REFERENCES [GRUPO_GENERICO].[Local]([local_id]);
+ALTER TABLE [MONSTERS_INC].[Cliente]
+    ADD CONSTRAINT [FK_Cliente_clie_localidad] FOREIGN KEY ([clie_localidad]) 
+    REFERENCES [MONSTERS_INC].[Localidad]([loca_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Item_Pedido]
-    ADD CONSTRAINT FK_Item_Pedido_Pedido FOREIGN KEY ([item_ped_pedido_numero])
-    REFERENCES [GRUPO_GENERICO].[Pedido]([ped_numero]);
+ALTER TABLE [MONSTERS_INC].[Envio]
+    ADD CONSTRAINT [FK_Envio_envio_ticket] FOREIGN KEY ([envio_ticket]) 
+    REFERENCES [MONSTERS_INC].[Ticket]([tick_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Item_Pedido]
-    ADD CONSTRAINT FK_Item_Pedido_Producto FOREIGN KEY ([item_ped_prod_id],[item_ped_local_id]) 
-    REFERENCES [GRUPO_GENERICO].[Producto_Local]([prod_loc_producto_id], [prod_loc_local_id]);
+ALTER TABLE [MONSTERS_INC].[Envio]
+    ADD CONSTRAINT [FK_Envio_envio_cliente] FOREIGN KEY ([envio_cliente]) 
+    REFERENCES [MONSTERS_INC].[Cliente]([clie_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Medio_Pago] 
-    ADD CONSTRAINT [FK_Medio_Pago_Tipo] FOREIGN KEY (medio_pago_tipo_id) 
-    REFERENCES [GRUPO_GENERICO].[Tipo_Medio_Pago]([tipo_medio_pago_id])
+ALTER TABLE [MONSTERS_INC].[Envio]
+    ADD CONSTRAINT [FK_Envio_envio_estado] FOREIGN KEY ([envio_estado]) 
+    REFERENCES [MONSTERS_INC].[Estado]([esta_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Medio_Pago] 
-    ADD CONSTRAINT [FK_Medio_Pago_Tarjeta] FOREIGN KEY (medio_pago_tarjeta) 
-    REFERENCES [GRUPO_GENERICO].[Tarjeta]([tarjeta_id])
+ALTER TABLE [MONSTERS_INC].[Envio]
+    ADD CONSTRAINT [FK_Envio_envio_entrega] FOREIGN KEY ([envio_entrega]) 
+    REFERENCES [MONSTERS_INC].[Entrega]([entr_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Tarjeta] 
-    ADD CONSTRAINT [FK_Tarjeta_Tipo] FOREIGN KEY (tarjeta_tipo) 
-    REFERENCES [GRUPO_GENERICO].[Tipo_Tarjeta]([tipo_tarjeta_id])
+ALTER TABLE [MONSTERS_INC].[Pago]
+    ADD CONSTRAINT [FK_Pago_pago_medio_pago] FOREIGN KEY ([pago_medio_pago]) 
+    REFERENCES [MONSTERS_INC].[Medio_Pago]([medio_pago_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Tarjeta] 
-    ADD CONSTRAINT [FK_Tarjeta_Marca] FOREIGN KEY (tarjeta_marca) 
-    REFERENCES [GRUPO_GENERICO].[Marca_Tarjeta]([marca_tarjeta_id])
+ALTER TABLE [MONSTERS_INC].[Pago]
+    ADD CONSTRAINT [FK_Pago_pago_detalle] FOREIGN KEY ([pago_detalle]) 
+    REFERENCES [MONSTERS_INC].[Detalle_Pago]([deta_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Tarjeta] 
-    ADD CONSTRAINT [FK_Tarjeta_Usuario] FOREIGN KEY (tarjeta_usuario_id) 
-    REFERENCES [GRUPO_GENERICO].[Usuario]([us_id])
+ALTER TABLE [MONSTERS_INC].[Pago]
+    ADD CONSTRAINT [FK_Pago_pago_ticket] FOREIGN KEY ([pago_ticket]) 
+    REFERENCES [MONSTERS_INC].[Ticket]([tick_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Cupon] 
-    ADD CONSTRAINT [FK_Cupon_Usuario] FOREIGN KEY (cup_usuario_id) 
-    REFERENCES [GRUPO_GENERICO].[Usuario]([us_id])
+ALTER TABLE [MONSTERS_INC].[Descuento_Medio_Pago_Aplicado]
+    ADD CONSTRAINT [FK_Descuento_Medio_Pago_Aplicado_desc_apli_pago] FOREIGN KEY ([desc_apli_pago]) 
+    REFERENCES [MONSTERS_INC].[Pago]([pago_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Cupon] 
-    ADD CONSTRAINT [FK_Cupon_Tipo] FOREIGN KEY (cup_tipo) 
-    REFERENCES [GRUPO_GENERICO].[Cupon_Tipo]([cupon_tipo_id])
+ALTER TABLE [MONSTERS_INC].[Descuento_Medio_Pago_Aplicado]
+    ADD CONSTRAINT [FK_Descuento_Medio_Pago_Aplicado_desc_apli_cod_descuento_mp] FOREIGN KEY ([desc_apli_cod_descuento_mp]) 
+    REFERENCES [MONSTERS_INC].[Descuento_Medio_Pago]([desc_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido_Cupon] 
-    ADD CONSTRAINT [FK_Ped_Cup_Cupon_Numero] FOREIGN KEY (ped_cup_cupon_numero) 
-    REFERENCES [GRUPO_GENERICO].[Cupon]([cup_numero])
+ALTER TABLE [MONSTERS_INC].[Detalle_Pago]
+    ADD CONSTRAINT [FK_Detalle_Pago_deta_cliente] FOREIGN KEY ([deta_cliente]) 
+    REFERENCES [MONSTERS_INC].[Cliente]([clie_id]);
 
-ALTER TABLE [GRUPO_GENERICO].[Pedido_Cupon] 
-    ADD CONSTRAINT [FK_Ped_Cup_Pedido_Numero] FOREIGN KEY (ped_cup_pedido_numero) 
-    REFERENCES [GRUPO_GENERICO].[Pedido]([ped_numero])
-
-ALTER TABLE [GRUPO_GENERICO].[Cupon_Reclamo] 
-    ADD CONSTRAINT [FK_Cup_Rec_Cupon_Numero] FOREIGN KEY (cup_rec_cupon_numero) 
-    REFERENCES [GRUPO_GENERICO].[Cupon]([cup_numero])
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo] 
-    ADD CONSTRAINT [FK_Reclamo_Usuario] FOREIGN KEY ([reclamo_usuario_id]) 
-    REFERENCES [GRUPO_GENERICO].[Usuario]([us_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo] 
-    ADD CONSTRAINT [FK_Reclamo_Pedido] FOREIGN KEY ([reclamo_pedido_id]) 
-    REFERENCES [GRUPO_GENERICO].[Pedido]([ped_numero]);
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo] 
-    ADD CONSTRAINT [FK_Reclamo_Tipo] FOREIGN KEY ([reclamo_tipo_id]) 
-    REFERENCES [GRUPO_GENERICO].[Reclamo_Tipo]([reclamo_tipo_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo] 
-    ADD CONSTRAINT [FK_Reclamo_Operador] FOREIGN KEY ([reclamo_operador_id]) 
-    REFERENCES [GRUPO_GENERICO].[Operador_Reclamo]([operador_rec_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo] 
-    ADD CONSTRAINT [FK_Reclamo_Estado] FOREIGN KEY ([reclamo_estado_id]) 
-    REFERENCES [GRUPO_GENERICO].[Reclamo_Estado]([reclamo_estado_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Reclamo] 
-    ADD CONSTRAINT [FK_Reclamo_Cupon] FOREIGN KEY ([reclamo_cupon_id]) 
-    REFERENCES [GRUPO_GENERICO].[Cupon_Reclamo]([cup_rec_numero]);
-
-ALTER TABLE [GRUPO_GENERICO].[Local] 
-    ADD CONSTRAINT [FK_Local_Tipo_Local] FOREIGN KEY ([local_tip]) 
-    REFERENCES [GRUPO_GENERICO].[Tipo_Local]([tipo_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Local] 
-    ADD CONSTRAINT [FK_Local_Categoria_Local] FOREIGN KEY ([local_categ]) 
-    REFERENCES [GRUPO_GENERICO].[Categoria_Local]([cat_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Local] 
-    ADD CONSTRAINT [FK_Local_Localidad] FOREIGN KEY ([local_localidad_id]) 
-    REFERENCES [GRUPO_GENERICO].[Localidad]([localidad_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Categoria_Local] 
-    ADD CONSTRAINT [FK_Categoria_Local_Tipo_Local] FOREIGN KEY ([cat_tipo]) 
-    REFERENCES [GRUPO_GENERICO].[Tipo_Local]([tipo_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Horario_Dia_Local] 
-    ADD CONSTRAINT [FK_Horario_Dia_Local_Local] FOREIGN KEY ([hordialoc_local_id]) 
-    REFERENCES [GRUPO_GENERICO].[Local]([local_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Horario_Dia_Local] 
-    ADD CONSTRAINT [FK_Horario_Dia_Local_Dia] FOREIGN KEY ([hordialoc_dia]) 
-    REFERENCES [GRUPO_GENERICO].[Dia]([dia_id]);
-
-ALTER TABLE [GRUPO_GENERICO].[Localidad] 
-    ADD CONSTRAINT [FK_Localidad_Provincia] FOREIGN KEY ([localidad_provincia_id]) 
-    REFERENCES [GRUPO_GENERICO].[Provincia]([provincia_id]);
+ALTER TABLE [MONSTERS_INC].[Detalle_Pago]
+    ADD CONSTRAINT [FK_Detalle_Pago_deta_tarjeta] FOREIGN KEY ([deta_tarjeta]) 
+    REFERENCES [MONSTERS_INC].[Tarjeta]([tarj_id]);
 
 
 PRINT '--- TABLAS CREADAS CORRECTAMENTE ---';
