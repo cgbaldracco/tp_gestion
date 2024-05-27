@@ -140,7 +140,7 @@ CREATE TABLE [MONSTERS_INC].[Supermercado]
     [super_cuit] nvarchar(13) NOT NULL,
     [super_iibb] nvarchar(14) NOT NULL,
     [super_domicilio] nvarchar(30) NOT NULL,
-	[super_localodad] numeric(18) NOT NULL,
+	[super_localidad] numeric(18) NOT NULL,
 	[super_fecha_inicio_actividad] date NOT NULL,
 	[super_condicion_fiscal] nvarchar(25) NOT NULL
 );
@@ -527,8 +527,194 @@ GO
 
 /* --- MIGRACION DE DATOS ---*/
 
-/* DATOS TIPO MOVILIDAD */
+/* DATOS PROVINCIAS */
 
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Provincia
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Provincia]
+        (prov_nombre)
+    SELECT DISTINCT provincia_nombre
+    from(
+        SELECT SUCURSAL_PROVINCIA as provincia_nombre
+            FROM gd_esquema.Maestra
+            where SUCURSAL_PROVINCIA IS NOT NULL
+        UNION
+            SELECT SUPER_PROVINCIA as provincia_nombre
+            from gd_esquema.Maestra
+            where SUPER_PROVINCIA IS NOT NULL 
+    ) as subquery;
+
+END
+GO
+
+/* LOCALIDAD */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Localidad
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Localidad]
+        (loca_nombre, loca_provincia)
+    SELECT DISTINCT localidad_nombre, provincia_id
+    from(
+       SELECT SUCURSAL_LOCALIDAD as localidad_nombre,
+                (SELECT top 1
+                    prov_id
+                from [MONSTERS_INC].Provincia
+                where prov_nombre = SUCURSAL_LOCALIDAD) as provincia_id
+            FROM gd_esquema.Maestra
+            where SUCURSAL_LOCALIDAD IS NOT NULL
+        UNION
+            SELECT SUPER_LOCALIDAD as localidad_nombre,
+                (SELECT top 1
+                    prov_id
+                from [MONSTERS_INC].Provincia
+                where prov_nombre =  SUPER_LOCALIDAD) as provincia_id
+            from gd_esquema.Maestra
+            where SUPER_LOCALIDAD IS NOT NULL
+    ) as subquery;
+END
+GO
+
+
+/* SUPERMERCADO */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Supermercado
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Supermercado]
+        (super_nombre, super_razon_social,super_cuit,super_iibb,super_domicilio,super_fecha_inicio_actividad,super_condicion_fiscal, super_localidad)
+    SELECT DISTINCT SUPER_NOMBRE, SUPER_RAZON_SOC, SUPER_CUIT, SUPER_IIBB, SUPER_DOMICILIO, SUPER_FECHA_INI_ACTIVIDAD, SUPER_CONDICION_FISCAL,
+	 (SELECT TOP 1
+            loca_id
+        FROM [MONSTERS_INC].[Localidad]
+        WHERE loca_nombre = SUPER_LOCALIDAD)
+    FROM gd_esquema.Maestra;
+END
+GO
+
+/* SUCURSAL */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Sucursal
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Sucursal]
+        (sucu_numero,sucu_direccion,sucu_localidad,sucu_supermercado)
+    SELECT DISTINCT SUCURSAL_NOMBRE,SUCURSAL_DIRECCION,
+	 (SELECT TOP 1
+            loca_id
+        FROM [MONSTERS_INC].[Localidad]
+        WHERE loca_nombre = SUCURSAL_LOCALIDAD),
+	 (SELECT TOP 1
+            super_id
+        FROM [MONSTERS_INC].[SUPERMERCADO]
+        WHERE super_localidad = SUCURSAL_LOCALIDAD)			--MAL, NOSE COMO UNIR() EN TABLA MAESTRA NO HAY SUCURSAL_SUPER
+    FROM gd_esquema.Maestra;
+END
+GO
+
+/* REGLA */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Regla
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Regla]
+        (reg_descripcion, reg_descuento,reg_cantidad_aplicable,reg_cantidad_descuento,reg_cantidad_max,reg_misma_marca,reg_mismo_producto)
+    SELECT DISTINCT REGLA_DESCRIPCION, REGLA_DESCUENTO_APLICABLE_PROD,REGLA_CANT_APLICA_DESCUENTO,REGLA_CANT_APLICA_DESCUENTO,REGLA_CANT_MAX_PROD,REGLA_APLICA_MISMO_PROD
+    FROM  gd_esquema.Maestra;
+														--SIENTO QUE FALTA UN WHERE PARA FILTRAR LOS NOT NULL pero nose que columna seria
+END
+GO
+
+/* PROMOCION */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Promocion
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Promocion]
+        (prom_descripcion, prom_fecha_fin,prom_fecha_fin,prom_regla)
+    SELECT DISTINCT PROMOCION_DESCRIPCION,PROMOCION_FECHA_INICIO,PROMOCION_FECHA_FIN,
+	(SELECT TOP 1
+        reg_id
+        FROM [MONSTERS_INC].[Regla]
+        WHERE  = )																--NI IDEA
+    FROM  gd_esquema.Maestra;
+														
+END
+GO
+
+/* DATOS CUPON */
+
+CREATE PROCEDURE GRUPO_GENERICO.Migrar_Cupon
+AS
+BEGIN
+    INSERT INTO GRUPO_GENERICO.[Cupon]
+        (cup_numero, cup_fecha_alta, cup_fecha_vencimiento, cup_monto, cup_usuario_id, cup_tipo)
+    SELECT DISTINCT CUPON_NRO, CUPON_FECHA_ALTA, CUPON_FECHA_VENCIMIENTO, CUPON_MONTO,
+        ( SELECT TOP 1
+            us_id
+        from [GRUPO_GENERICO].[Usuario]
+        where us_dni = USUARIO_DNI
+        ),
+        ( SELECT TOP 1
+            cupon_tipo_id
+        from [GRUPO_GENERICO].[Cupon_Tipo]
+        where cupon_tipo_nombre = CUPON_TIPO
+        )
+    FROM gd_esquema.Maestra
+    WHERE CUPON_NRO IS NOT NULL
+END
+GO
+
+/* DATOS REPARTIDOR */
+CREATE PROCEDURE GRUPO_GENERICO.Migrar_Repartidor
+AS
+BEGIN
+    INSERT INTO GRUPO_GENERICO.[Repartidor]
+        (rep_nombre, rep_apellido, rep_dni, rep_telefono, rep_mail, rep_fecha_nacimiento,
+         rep_tipo_movilidad_id, rep_direccion)
+    SELECT DISTINCT REPARTIDOR_NOMBRE, REPARTIDOR_APELLIDO, REPARTIDOR_DNI, REPARTIDOR_TELEFONO, REPARTIDOR_EMAIL, REPARTIDOR_FECHA_NAC,
+        (SELECT TOP 1
+            tipo_movilidad_id
+        FROM [GRUPO_GENERICO].[Tipo_Movilidad]
+        WHERE tipo_movilidad_nombre = REPARTIDOR_TIPO_MOVILIDAD),
+        REPARTIDOR_DIRECION
+    FROM gd_esquema.Maestra
+    WHERE REPARTIDOR_DNI IS NOT NULL
+END
+GO
+
+/* DATOS DIRECCION */
+CREATE PROCEDURE GRUPO_GENERICO.Migrar_Direccion
+AS
+BEGIN
+    INSERT INTO GRUPO_GENERICO.[Direccion]
+        (dir_direccion,dir_nombre, dir_usuario_id, dir_localidad_id)
+    SELECT DISTINCT M.DIRECCION_USUARIO_DIRECCION, M.DIRECCION_USUARIO_NOMBRE,
+        ( select top 1
+            us_id
+        from [GRUPO_GENERICO].[Usuario]
+        where us_dni = M.USUARIO_DNI ) as USUARIO_ID,
+        ( select top 1
+            localidad_id
+        from [GRUPO_GENERICO].[Localidad]
+        where localidad_nombre = M.DIRECCION_USUARIO_LOCALIDAD
+            and localidad_provincia_id = (select top 1
+                provincia_id
+            from [GRUPO_GENERICO].Provincia
+            where provincia_nombre = M.DIRECCION_USUARIO_PROVINCIA )) as LOCALIDAD_ID
+    from gd_esquema.Maestra as M
+    where M.DIRECCION_USUARIO_DIRECCION IS NOT NULL
+        AND ( select top 1
+            us_id
+        from [GRUPO_GENERICO].[Usuario]
+        where us_dni = M.USUARIO_DNI ) IS NOT NULL
+END
+GO
+
+
+
+/* DATOS TIPO MOVILIDAD */
 
 CREATE PROCEDURE [GRUPO_GENERICO].Migrar_Tipo_Movilidad
 AS
