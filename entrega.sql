@@ -942,9 +942,9 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Ticket
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].Ticket
-    (tick_fecha_hora, tick_caja, tick_empleado, tick_tipo_comprobante, tick_total_productos,
+    (tick_id, tick_fecha_hora, tick_caja, tick_empleado, tick_tipo_comprobante, tick_total_productos,
     tick_total_descuento, tick_total_descuento_mp, tick_total_envio, tick_total) 
-        SELECT TICKET_FECHA_HORA AS tick_fecha_hora, CAJA_NUMERO AS tick_caja, (
+        SELECT TICKET_NUMERO AS tick_id, TICKET_FECHA_HORA AS tick_fecha_hora, CAJA_NUMERO AS tick_caja, (
                 SELECT empl_id FROM [MONSTERS_INC].Empleado
                 WHERE EMPLEADO_DNI = empl_dni AND EMPLEADO_APELLIDO = empl_apellido AND EMPLEADO_NOMBRE = empl_nombre
             ) AS tick_empleado, (
@@ -961,6 +961,7 @@ BEGIN
         AND TICKET_TOTAL_DESCUENTO_APLICADO_MP IS NOT NULL
         AND TICKET_TOTAL_ENVIO IS NOT NULL
         AND TICKET_TOTAL_TICKET IS NOT NULL
+		AND TICKET_NUMERO IS NOT NULL
 END
 GO
 
@@ -994,30 +995,22 @@ END
 GO
 
 /* DATOS DIRECCION */
-CREATE PROCEDURE GRUPO_GENERICO.Migrar_Direccion
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Envio
 AS
 BEGIN
-    INSERT INTO GRUPO_GENERICO.[Direccion]
-        (dir_direccion,dir_nombre, dir_usuario_id, dir_localidad_id)
-    SELECT DISTINCT M.DIRECCION_USUARIO_DIRECCION, M.DIRECCION_USUARIO_NOMBRE,
-        ( select top 1
-            us_id
-        from [GRUPO_GENERICO].[Usuario]
-        where us_dni = M.USUARIO_DNI ) as USUARIO_ID,
-        ( select top 1
-            localidad_id
-        from [GRUPO_GENERICO].[Localidad]
-        where localidad_nombre = M.DIRECCION_USUARIO_LOCALIDAD
-            and localidad_provincia_id = (select top 1
-                provincia_id
-            from [GRUPO_GENERICO].Provincia
-            where provincia_nombre = M.DIRECCION_USUARIO_PROVINCIA )) as LOCALIDAD_ID
-    from gd_esquema.Maestra as M
-    where M.DIRECCION_USUARIO_DIRECCION IS NOT NULL
-        AND ( select top 1
-            us_id
-        from [GRUPO_GENERICO].[Usuario]
-        where us_dni = M.USUARIO_DNI ) IS NOT NULL
+    INSERT INTO [MONSTERS_INC].[Envio]
+        (envio_costo, envio_fecha, envio_hora_inicio, envio_hora_fin, envio_cliente, envio_entrega, envio_estado, envio_ticket)
+    SELECT ENVIO_COSTO, ENVIO_FECHA_PROGRAMADA,ENVIO_HORA_INICIO,ENVIO_HORA_FIN, (
+		SELECT TOP 1 clie_id FROM Cliente WHERE clie_dni = CLIENTE_DNI AND clie_apellido = CLIENTE_APELLIDO AND clie_nombre = CLIENTE_NOMBRE
+	) AS envio_cliente, 
+	(SELECT TOP 1 entr_id FROM Entrega WHERE ENVIO_FECHA_ENTREGA = entr_fecha_hora_entrega) AS envio_entrega, -- Creo que está mal, puede haber mas de un envio con un datetime de entrega?
+    (SELECT TOP 1 esta_id FROM Estado WHERE esta_descripcion = ENVIO_ESTADO) as envio_estado,
+	(SELECT TOP 1 tick_id FROM Ticket WHERE tick_tipo_comprobante = TICKET_TIPO_COMPROBANTE AND tick_fecha_hora = TICKET_FECHA_HORA AND tick_total = TICKET_TOTAL_TICKET) AS envio_ticket
+    from gd_esquema.Maestra 
+    where ENVIO_COSTO IS NOT NULL
+        AND ENVIO_FECHA_PROGRAMADA IS NOT NULL
+		AND ENVIO_HORA_INICIO IS NOT NULL
+		AND ENVIO_HORA_FIN IS NOT NULL
 END
 GO
 
