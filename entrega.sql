@@ -559,91 +559,37 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Localidad
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Localidad] (loca_nombre, loca_provincia)
-        SELECT TOP 1 SUPER_LOCALIDAD AS localidad_nombre, (
-            SELECT prov_id 
-            FROM [MONSTERS_INC].[Provincia] 
-            WHERE prov_nombre = SUPER_PROVINCIA) AS loca_provincia
+    SELECT DISTINCT
+        localidad_nombre, 
+        Provincia.prov_id AS loca_provincia
+    FROM (
+        SELECT SUPER_LOCALIDAD AS localidad_nombre, SUPER_PROVINCIA AS provincia_nombre
         FROM gd_esquema.Maestra
         WHERE SUPER_LOCALIDAD IS NOT NULL
-        UNION
-        SELECT TOP 1 SUCURSAL_LOCALIDAD AS localidad_nombre, (
-            SELECT prov_id 
-            FROM [MONSTERS_INC].[Provincia] 
-            WHERE prov_nombre = SUCURSAL_PROVINCIA) AS loca_provincia
+        
+        UNION ALL
+        
+        SELECT SUCURSAL_LOCALIDAD AS localidad_nombre, SUCURSAL_PROVINCIA AS provincia_nombre
         FROM gd_esquema.Maestra
         WHERE SUCURSAL_LOCALIDAD IS NOT NULL
-        UNION
-        SELECT DISTINCT CLIENTE_LOCALIDAD AS localidad_nombre, (
-            SELECT prov_id 
-            FROM [MONSTERS_INC].[Provincia] 
-            WHERE prov_nombre = CLIENTE_PROVINCIA) AS loca_provincia
+        
+        UNION ALL
+        
+        SELECT CLIENTE_LOCALIDAD AS localidad_nombre, CLIENTE_PROVINCIA AS provincia_nombre
         FROM gd_esquema.Maestra
         WHERE CLIENTE_LOCALIDAD IS NOT NULL
+    ) AS Localidades
+    JOIN [MONSTERS_INC].[Provincia] Provincia 
+        ON Localidades.provincia_nombre = Provincia.prov_nombre
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM [MONSTERS_INC].[Localidad] 
+        WHERE [MONSTERS_INC].[Localidad].loca_nombre = Localidades.localidad_nombre 
+          AND [MONSTERS_INC].[Localidad].loca_provincia = Provincia.prov_id
+    );
 END
 GO
 
-/*
-/* DATOS PROVINCIAS */
-
-CREATE PROCEDURE [MONSTERS_INC].Migrar_Provincia
-AS
-BEGIN
-    INSERT INTO [MONSTERS_INC].[Provincia]
-        (prov_nombre)
-    SELECT DISTINCT provincia_nombre
-    from(
-        SELECT SUCURSAL_PROVINCIA as provincia_nombre
-            FROM gd_esquema.Maestra
-            where SUCURSAL_PROVINCIA IS NOT NULL
-        UNION
-            SELECT SUPER_PROVINCIA as provincia_nombre
-            from gd_esquema.Maestra
-            where SUPER_PROVINCIA IS NOT NULL 
-		UNION
-			SELECT CLIENTE_PROVINCIA as provincia_nombre
-			from gd_esquema.Maestra
-			where CLIENTE_PROVINCIA IS NOT NULL
-    ) as subquery;
-
-END
-GO
-
-/* LOCALIDAD */
-
-CREATE PROCEDURE [MONSTERS_INC].Migrar_Localidad
-AS
-BEGIN
-    INSERT INTO [MONSTERS_INC].[Localidad]
-        (loca_nombre, loca_provincia)
-    SELECT DISTINCT localidad_nombre, provincia_id
-    from(
-       SELECT SUCURSAL_LOCALIDAD as localidad_nombre,
-                (SELECT top 1
-                    prov_id
-                from [MONSTERS_INC].Provincia
-                where prov_nombre = SUCURSAL_LOCALIDAD) as provincia_id
-            FROM gd_esquema.Maestra
-            where SUCURSAL_LOCALIDAD IS NOT NULL
-        UNION
-            SELECT SUPER_LOCALIDAD as localidad_nombre,
-                (SELECT top 1
-                    prov_id
-                from [MONSTERS_INC].Provincia
-                where prov_nombre =  SUPER_LOCALIDAD) as provincia_id
-            from gd_esquema.Maestra
-            where SUPER_LOCALIDAD IS NOT NULL
-		UNION
-			SELECT CLIENTE_LOCALIDAD as localidad_nombre,
-                (SELECT top 1
-                    prov_id
-                from [MONSTERS_INC].Provincia
-                where prov_nombre =  CLIENTE_LOCALIDAD) as provincia_id
-            from gd_esquema.Maestra
-            where CLIENTE_LOCALIDAD IS NOT NULL
-    ) as subquery;
-END
-GO
-*/
 
 /* SUPERMERCADO */
 
