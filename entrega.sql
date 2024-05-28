@@ -735,17 +735,15 @@ AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Promocion_Por_Producto]
         (prom_prod_producto, prom_prod_promocion)
-    SELECT DISTINCT (select top 1
-           prod_id
-        from [MONSTERS_INC].[Producto]
-        where prod_descripcion = PRODUCTO_DESCRIPCION and prod_nombre = PRODUCTO_NOMBRE) AS prom_prod_producto, 
-		(select top 1
-           prom_id 
-        from [MONSTERS_INC].[Promocion]
-        where prom_descripcion = PROMOCION_DESCRIPCION AND prom_id = PROMO_CODIGO) AS prom_prod_promocion
-    FROM gd_esquema.Maestra
+    SELECT DISTINCT
+        P.prod_id AS prom_prod_producto,
+        PR.prom_id AS prom_prod_promocion
+    FROM gd_esquema.Maestra AS M
+    INNER JOIN [MONSTERS_INC].[Producto] AS P ON P.prod_descripcion = M.PRODUCTO_DESCRIPCION AND P.prod_nombre = M.PRODUCTO_NOMBRE
+    INNER JOIN [MONSTERS_INC].[Promocion] AS PR ON PR.prom_descripcion = M.PROMOCION_DESCRIPCION AND PR.prom_id = M.PROMO_CODIGO
 END
 GO
+
 
 /* CAJA */
 
