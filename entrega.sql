@@ -964,6 +964,35 @@ BEGIN
 END
 GO
 
+/* Estado */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Estado
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Estado]
+        (esta_descripcion)
+    SELECT DISTINCT ENVIO_ESTADO
+    FROM gd_esquema.Maestra
+    WHERE ENVIO_ESTADO IS NOT NULL
+END
+GO
+
+/* Entrega */
+
+-- Esta tabla se modelo por si a futuro se agregaga un comentario de entrega
+-- No le pongo DISTINCT porque caso contrario perderia ese sentido
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Entrega
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Entrega]
+        (entr_fecha_hora_entrega)
+    SELECT ENVIO_FECHA_ENTREGA
+    FROM gd_esquema.Maestra
+    WHERE ENVIO_FECHA_ENTREGA IS NOT NULL
+END
+GO
+
 /* DATOS DIRECCION */
 CREATE PROCEDURE GRUPO_GENERICO.Migrar_Direccion
 AS
