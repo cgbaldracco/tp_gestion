@@ -664,15 +664,18 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Promocion
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Promocion]
-        (prom_id,prom_descripcion, prom_fecha_fin,prom_fecha_fin,prom_regla)
-    SELECT DISTINCT PROMO_CODIGO,PROMOCION_DESCRIPCION,PROMOCION_FECHA_INICIO,PROMOCION_FECHA_FIN,
-	(SELECT TOP 1
-        reg_id
-        FROM [MONSTERS_INC].[Regla]
-        WHERE  reg_descripcion = REGLA_DESCRIPCION)
-    FROM  gd_esquema.Maestra;												
+        (prom_id, prom_descripcion, prom_fecha_inicio, prom_fecha_fin, prom_regla)
+    SELECT DISTINCT
+        PROMO_CODIGO,
+        PROMOCION_DESCRIPCION,
+        PROMOCION_FECHA_INICIO,
+        PROMOCION_FECHA_FIN,
+        R.reg_id AS prom_regla
+    FROM gd_esquema.Maestra AS M
+    LEFT JOIN [MONSTERS_INC].[Regla] AS R ON R.reg_descripcion = M.REGLA_DESCRIPCION;
 END
 GO
+
 
 /* CATEGORÍA MAYOR */
 
