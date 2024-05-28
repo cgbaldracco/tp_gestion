@@ -707,24 +707,26 @@ END
 GO
 
 /* PRODUCTO */
+
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Producto
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Producto]
         (prod_descripcion, prod_marca, prod_nombre, prod_precio, prod_subcategoria)
-    SELECT DISTINCT PRODUCTO_DESCRIPCION, PRODUCTO_MARCA, PRODUCTO_NOMBRE, PRODUCTO_PRECIO,
-        ( select top 1
-            subc_id
-        from [MONSTERS_INC].[Subcategoria]
-        where subc_descripcion = PRODUCTO_SUB_CATEGORIA)
-    from gd_esquema.Maestra as M
-    where PRODUCTO_DESCRIPCION IS NOT NULL
-        AND PRODUCTO_MARCA IS NOT NULL
-		AND PRODUCTO_NOMBRE IS NOT NULL
-		AND PRODUCTO_PRECIO IS NOT NULL
+    SELECT DISTINCT
+        PRODUCTO_DESCRIPCION,
+        PRODUCTO_MARCA,
+        PRODUCTO_NOMBRE,
+        PRODUCTO_PRECIO,
+        SC.subc_id AS prod_subcategoria
+    FROM gd_esquema.Maestra AS M
+    LEFT JOIN [MONSTERS_INC].[Subcategoria] AS SC ON SC.subc_descripcion = M.PRODUCTO_SUB_CATEGORIA
+    WHERE M.PRODUCTO_DESCRIPCION IS NOT NULL
+        AND M.PRODUCTO_MARCA IS NOT NULL
+        AND M.PRODUCTO_NOMBRE IS NOT NULL
+        AND M.PRODUCTO_PRECIO IS NOT NULL;
 END
 GO
-
 
 /* Promocion Por Producto */
 
