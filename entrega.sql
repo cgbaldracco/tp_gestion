@@ -1000,19 +1000,37 @@ AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Envio]
         (envio_costo, envio_fecha, envio_hora_inicio, envio_hora_fin, envio_cliente, envio_entrega, envio_estado, envio_ticket)
-    SELECT ENVIO_COSTO, ENVIO_FECHA_PROGRAMADA,ENVIO_HORA_INICIO,ENVIO_HORA_FIN, (
-		SELECT TOP 1 clie_id FROM Cliente WHERE clie_dni = CLIENTE_DNI AND clie_apellido = CLIENTE_APELLIDO AND clie_nombre = CLIENTE_NOMBRE
-	) AS envio_cliente, 
-	(SELECT TOP 1 entr_id FROM Entrega WHERE ENVIO_FECHA_ENTREGA = entr_fecha_hora_entrega) AS envio_entrega, -- Creo que está mal, puede haber mas de un envio con un datetime de entrega?
-    (SELECT TOP 1 esta_id FROM Estado WHERE esta_descripcion = ENVIO_ESTADO) as envio_estado,
-	(SELECT TOP 1 tick_id FROM Ticket WHERE tick_tipo_comprobante = TICKET_TIPO_COMPROBANTE AND tick_fecha_hora = TICKET_FECHA_HORA AND tick_total = TICKET_TOTAL_TICKET) AS envio_ticket
-    from gd_esquema.Maestra 
-    where ENVIO_COSTO IS NOT NULL
-        AND ENVIO_FECHA_PROGRAMADA IS NOT NULL
-		AND ENVIO_HORA_INICIO IS NOT NULL
-		AND ENVIO_HORA_FIN IS NOT NULL
+    SELECT 
+        m.ENVIO_COSTO, 
+        m.ENVIO_FECHA_PROGRAMADA,
+        m.ENVIO_HORA_INICIO,
+        m.ENVIO_HORA_FIN,
+        c.clie_id AS envio_cliente, 
+        e.entr_id AS envio_entrega,
+        es.esta_id AS envio_estado,
+        t.tick_id AS envio_ticket
+    FROM 
+        gd_esquema.Maestra m
+    LEFT JOIN 
+        Cliente c ON m.CLIENTE_DNI = c.clie_dni 
+                  AND m.CLIENTE_APELLIDO = c.clie_apellido 
+                  AND m.CLIENTE_NOMBRE = c.clie_nombre
+    LEFT JOIN 
+        Entrega e ON m.ENVIO_FECHA_ENTREGA = e.entr_fecha_hora_entrega
+    LEFT JOIN 
+        Estado es ON m.ENVIO_ESTADO = es.esta_descripcion
+    LEFT JOIN 
+        Ticket t ON m.TICKET_TIPO_COMPROBANTE = t.tick_tipo_comprobante 
+                 AND m.TICKET_FECHA_HORA = t.tick_fecha_hora 
+                 AND m.TICKET_NUMERO = t.tick_id
+    WHERE 
+        m.ENVIO_COSTO IS NOT NULL
+        AND m.ENVIO_FECHA_PROGRAMADA IS NOT NULL
+        AND m.ENVIO_HORA_INICIO IS NOT NULL
+        AND m.ENVIO_HORA_FIN IS NOT NULL;
 END
 GO
+
 
 CREATE PROCEDURE GRUPO_GENERICO.Migrar_Tipo_Paquete
 AS
