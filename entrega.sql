@@ -691,18 +691,18 @@ END
 GO
 
 /* SUB_CATEGORIA */
+
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Sub_Categoria
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Subcategoria]
         (subc_descripcion, subc_categoria_mayor)
-    SELECT DISTINCT PRODUCTO_SUB_CATEGORIA,
-        (SELECT TOP 1
-            catm_id
-        FROM [MONSTERS_INC].[Categoria_Mayor]
-        WHERE catm_descripcion = PRODUCTO_CATEGORIA)
-    FROM gd_esquema.Maestra
-    WHERE PRODUCTO_SUB_CATEGORIA IS NOT NULL
+    SELECT DISTINCT
+        PRODUCTO_SUB_CATEGORIA,
+        CM.catm_id AS subc_categoria_mayor
+    FROM gd_esquema.Maestra AS M
+    LEFT JOIN [MONSTERS_INC].[Categoria_Mayor] AS CM ON CM.catm_descripcion = M.PRODUCTO_CATEGORIA
+    WHERE M.PRODUCTO_SUB_CATEGORIA IS NOT NULL;
 END
 GO
 
