@@ -826,6 +826,35 @@ BEGIN
 END
 GO
 
+/* Tarjeta */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Tarjeta
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].Tarjeta (tarj_numero, tarj_vencimiento_tarjeta)
+        SELECT PAGO_TARJETA_NRO, PAGO_TARJETA_FECHA_VENC
+        FROM gd_esquema.Maestra
+        WHERE PAGO_TARJETA_NRO IS NOT NULL AND PAGO_TARJETA_FECHA_VENC IS NOT NULL
+END
+GO
+
+/* Detalle Pago */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Detalle_Pago
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].Detalle_Pago 
+    (deta_cliente, deta_tarjeta) 
+    SELECT (SELECT clie_id
+    FROM [MONSTERS_INC].Cliente
+    WHERE CLIENTE_DNI = clie_dni) AS deta_cliente, 
+    (SELECT tarj_id 
+    FROM [MONSTERS_INC].Tarjeta
+    WHERE PAGO_TARJETA_NRO = tarj_numero) AS deta_tarjeta
+    FROM gd_esquema.Maestra
+    WHERE CLIENTE_DNI IS NOT NULL AND PAGO_TARJETA_NRO IS NOT NULL
+END
+
 /* DATOS DIRECCION */
 CREATE PROCEDURE GRUPO_GENERICO.Migrar_Direccion
 AS
