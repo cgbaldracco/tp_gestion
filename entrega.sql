@@ -223,7 +223,8 @@ CREATE TABLE [MONSTERS_INC].[Detalle_Pago]
 (
     [deta_id] numeric(18) NOT NULL IDENTITY,
     [deta_cliente] numeric(18) NOT NULL,
-    [deta_tarjeta] numeric(18) NOT NULL
+    [deta_tarjeta] numeric(18) NOT NULL,
+    [deta_tarjeta_cuotas] decimal(18)
 );
 
 /* PAGO */
@@ -865,15 +866,16 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Detalle_Pago
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].Detalle_Pago 
-    (deta_cliente, deta_tarjeta) 
+    (deta_cliente, deta_tarjeta, deta_tarjeta_cuotas) 
     SELECT (SELECT clie_id
     FROM [MONSTERS_INC].Cliente
     WHERE CLIENTE_DNI = clie_dni) AS deta_cliente, 
     (SELECT tarj_id 
     FROM [MONSTERS_INC].Tarjeta
-    WHERE PAGO_TARJETA_NRO = tarj_numero) AS deta_tarjeta
+    WHERE PAGO_TARJETA_NRO = tarj_numero) AS deta_tarjeta,
+    PAGO_TARJETA_CUOTAS AS deta_tarjeta_cuotas
     FROM gd_esquema.Maestra
-    WHERE CLIENTE_DNI IS NOT NULL AND PAGO_TARJETA_NRO IS NOT NULL
+    WHERE PAGO_TARJETA_NRO IS NOT NULL
 END
 GO
 
@@ -1005,6 +1007,57 @@ BEGIN
         AND m.ENVIO_FECHA_PROGRAMADA IS NOT NULL
         AND m.ENVIO_HORA_INICIO IS NOT NULL
         AND m.ENVIO_HORA_FIN IS NOT NULL;
+END
+GO
+
+/* Item Ticket */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Item_Ticket
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Item_Ticket]
+        (item_tick_ticket, item_tick_producto, item_tick_promocion, item_tick_cantidad, item_tick_total, item_tick_descuento_aplicado)
+    SELECT 
+        t.tick_id AS item_tick_ticket, 
+        pr.prod_id AS item_tick_producto, 
+        pm.prom_id AS item_tick_promocion,
+        TICKET_DET_CANTIDAD AS item_tick_cantidad, 
+        TICKET_TOTAL_TICKET AS item_tick_total, 
+        TICKET_TOTAL_DESCUENTO_APLICADO AS item_tick_descuento_aplicado
+    FROM gd_esquema.Maestra
+    LEFT JOIN [MONSTERS_INC].Ticket t ON TICKET_FECHA_HORA = t.tick_fecha_hora 
+        AND TICKET_NUMERO = t.tick_id
+    LEFT JOIN [MONSTERS_INC].Producto pr ON PRODUCTO_NOMBRE = prod_nombre 
+        AND PRODUCTO_DESCRIPCION = prod_descripcion 
+        AND PRODUCTO_PRECIO = prod_precio
+    LEFT JOIN [MONSTERS_INC].Promocion pm ON PROMOCION_DESCRIPCION = prom_descripcion 
+        AND PROMOCION_FECHA_INICIO = prom_fecha_inicio
+        AND PROMOCION_FECHA_FIN = prom_fecha_fin
+    WHERE TICKET_DET_CANTIDAD IS NOT NULL
+    AND TICKET_TOTAL_TICKET IS NOT NULL
+    AND TICKET_TOTAL_DESCUENTO_APLICADO IS NOT NULL
+END
+GO
+
+/* Pago */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Pago
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].Pago
+    (pago_fecha, pago_medio_pago, pago_detalle, pago_importe, pago_ticket)
+    SELECT PAGO_FECHA AS pago_fecha,
+    medio_pago_id AS pago_medio_pago,
+    deta_id AS pago_detalle,
+    PAGO_IMPORTE AS pago_importe,
+    tick_id AS pago_ticket
+    FROM gd_esquema.Maestra
+    LEFT JOIN [MONSTERS_INC].Medio_Pago ON PAGO_TIPO_MEDIO_PAGO = medio_pago_tipo 
+        AND PAGO_MEDIO_PAGO = medio_pago_nombre
+    LEFT JOIN [MONSTERS_INC].Tarjeta ON PAGO_TARJETA_NRO = tarj_numero 
+        AND PAGO_TARJETA_FECHA_VENC = tarj_vencimiento_tarjeta
+    LEFT JOIN [MONSTERS_INC].Detalle_Pago ON deta_tarjeta = tarj_id
+    LEFT JOIN [MONSTERS_INC].Ticket ON TICKET_NUMERO = tick_id AND TICKET_FECHA_HORA = tick_fecha_hora
 END
 GO
 
