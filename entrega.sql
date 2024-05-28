@@ -526,32 +526,32 @@ GO
 
 /* --- MIGRACION DE DATOS ---*/
 
-
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Provincia
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Provincia] (prov_nombre)
-        SELECT TOP 1 SUPER_PROVINCIA AS prov_nombre 
+    SELECT DISTINCT prov_nombre
+    FROM (
+        SELECT SUPER_PROVINCIA AS prov_nombre 
         FROM gd_esquema.Maestra
         WHERE SUPER_PROVINCIA IS NOT NULL
-        UNION
-        SELECT TOP 1 SUCURSAL_PROVINCIA AS prov_nombre 
+        
+        UNION ALL
+        
+        SELECT SUCURSAL_PROVINCIA AS prov_nombre 
         FROM gd_esquema.Maestra
         WHERE SUCURSAL_PROVINCIA IS NOT NULL
-        UNION
+        
+        UNION ALL
+        
         SELECT CLIENTE_PROVINCIA AS prov_nombre 
         FROM gd_esquema.Maestra
         WHERE CLIENTE_PROVINCIA IS NOT NULL
-/*
-    SELECT SUCURSAL_PROVINCIA as provincia_nombre
-        FROM gd_esquema.Maestra
-        where SUCURSAL_PROVINCIA IS NOT NULL
-    UNION
-        SELECT SUPER_PROVINCIA as provincia_nombre
-        from gd_esquema.Maestra
-        where SUPER_PROVINCIA IS NOT NULL */
+    ) AS Provincias
+    WHERE prov_nombre NOT IN (SELECT prov_nombre FROM [MONSTERS_INC].[Provincia]);
 END
 GO
+
 
 /* LOCALIDAD */
 
@@ -1040,20 +1040,6 @@ BEGIN
         AND m.ENVIO_FECHA_PROGRAMADA IS NOT NULL
         AND m.ENVIO_HORA_INICIO IS NOT NULL
         AND m.ENVIO_HORA_FIN IS NOT NULL;
-END
-GO
-
-
-CREATE PROCEDURE GRUPO_GENERICO.Migrar_Tipo_Paquete
-AS
-BEGIN
-
-    INSERT INTO GRUPO_GENERICO.[Tipo_Paquete]
-        (tipo_paquete_id, tipo_paquete_alto_max, tipo_paquete_ancho_max, tipo_paquete_largo_max, tipo_paquete_peso_max, tipo_paquete_precio)
-    SELECT DISTINCT PAQUETE_TIPO, PAQUETE_ALTO_MAX, PAQUETE_ANCHO_MAX, PAQUETE_LARGO_MAX, PAQUETE_PESO_MAX, PAQUETE_TIPO_PRECIO
-    FROM gd_esquema.Maestra
-    WHERE PAQUETE_TIPO IS NOT NULL
-
 END
 GO
 
