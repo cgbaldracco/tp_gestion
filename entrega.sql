@@ -526,6 +526,63 @@ GO
 
 /* --- MIGRACION DE DATOS ---*/
 
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Provincia
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Provincia] (prov_nombre)
+        SELECT TOP 1 SUPER_PROVINCIA AS prov_nombre 
+        FROM gd_esquema.Maestra
+        WHERE SUPER_PROVINCIA IS NOT NULL
+        UNION
+        SELECT TOP 1 SUCURSAL_PROVINCIA AS prov_nombre 
+        FROM gd_esquema.Maestra
+        WHERE SUCURSAL_PROVINCIA IS NOT NULL
+        UNION
+        SELECT CLIENTE_PROVINCIA AS prov_nombre 
+        FROM gd_esquema.Maestra
+        WHERE CLIENTE_PROVINCIA IS NOT NULL
+/*
+    SELECT SUCURSAL_PROVINCIA as provincia_nombre
+        FROM gd_esquema.Maestra
+        where SUCURSAL_PROVINCIA IS NOT NULL
+    UNION
+        SELECT SUPER_PROVINCIA as provincia_nombre
+        from gd_esquema.Maestra
+        where SUPER_PROVINCIA IS NOT NULL */
+END
+GO
+
+/* LOCALIDAD */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Localidad
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].[Localidad] (loca_nombre, loca_provincia)
+        SELECT TOP 1 SUPER_LOCALIDAD AS localidad_nombre, (
+            SELECT prov_id 
+            FROM [MONSTERS_INC].[Provincia] 
+            WHERE prov_nombre = SUPER_PROVINCIA) AS loca_provincia
+        FROM gd_esquema.Maestra
+        WHERE SUPER_LOCALIDAD IS NOT NULL
+        UNION
+        SELECT TOP 1 SUCURSAL_LOCALIDAD AS localidad_nombre, (
+            SELECT prov_id 
+            FROM [MONSTERS_INC].[Provincia] 
+            WHERE prov_nombre = SUCURSAL_PROVINCIA) AS loca_provincia
+        FROM gd_esquema.Maestra
+        WHERE SUCURSAL_LOCALIDAD IS NOT NULL
+        UNION
+        SELECT DISTINCT CLIENTE_LOCALIDAD AS localidad_nombre, (
+            SELECT prov_id 
+            FROM [MONSTERS_INC].[Provincia] 
+            WHERE prov_nombre = CLIENTE_PROVINCIA) AS loca_provincia
+        FROM gd_esquema.Maestra
+        WHERE CLIENTE_LOCALIDAD IS NOT NULL
+END
+GO
+
+/*
 /* DATOS PROVINCIAS */
 
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Provincia
@@ -586,7 +643,7 @@ BEGIN
     ) as subquery;
 END
 GO
-
+*/
 
 /* SUPERMERCADO */
 
