@@ -597,15 +597,21 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Supermercado
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Supermercado]
-        (super_nombre, super_razon_social,super_cuit,super_iibb,super_domicilio,super_fecha_inicio_actividad,super_condicion_fiscal, super_localidad)
-    SELECT DISTINCT SUPER_NOMBRE, SUPER_RAZON_SOC, SUPER_CUIT, SUPER_IIBB, SUPER_DOMICILIO, SUPER_FECHA_INI_ACTIVIDAD, SUPER_CONDICION_FISCAL,
-	 (SELECT TOP 1
-            loca_id
-        FROM [MONSTERS_INC].[Localidad]
-        WHERE loca_nombre = SUPER_LOCALIDAD)
-    FROM gd_esquema.Maestra;
+        (super_nombre, super_razon_social, super_cuit, super_iibb, super_domicilio, super_fecha_inicio_actividad, super_condicion_fiscal, super_localidad)
+    SELECT DISTINCT
+        SUPER_NOMBRE,
+        SUPER_RAZON_SOC,
+        SUPER_CUIT,
+        SUPER_IIBB,
+        SUPER_DOMICILIO,
+        SUPER_FECHA_INI_ACTIVIDAD,
+        SUPER_CONDICION_FISCAL,
+        l.loca_id
+    FROM gd_esquema.Maestra AS M
+    LEFT JOIN [MONSTERS_INC].[Localidad] AS l ON l.loca_nombre = M.SUPER_LOCALIDAD;
 END
 GO
+
 
 /* SUCURSAL */
 
