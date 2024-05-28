@@ -942,28 +942,40 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Ticket
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].Ticket
-    (tick_id, tick_fecha_hora, tick_caja, tick_empleado, tick_tipo_comprobante, tick_total_productos,
-    tick_total_descuento, tick_total_descuento_mp, tick_total_envio, tick_total) 
-        SELECT TICKET_NUMERO AS tick_id, TICKET_FECHA_HORA AS tick_fecha_hora, CAJA_NUMERO AS tick_caja, (
-                SELECT empl_id FROM [MONSTERS_INC].Empleado
-                WHERE EMPLEADO_DNI = empl_dni AND EMPLEADO_APELLIDO = empl_apellido AND EMPLEADO_NOMBRE = empl_nombre
-            ) AS tick_empleado, (
-                SELECT tipo_comp_id FROM [MONSTERS_INC].Tipo_Comprobante
-                WHERE TICKET_TIPO_COMPROBANTE = tipo_comp_detalle
-            ) AS tick_tipo_comprobante,
-            TICKET_SUBTOTAL_PRODUCTOS AS tick_total_productos, TICKET_TOTAL_DESCUENTO_APLICADO AS tick_total_descuento,
-            TICKET_TOTAL_DESCUENTO_APLICADO_MP AS tick_total_descuento_mp, TICKET_TOTAL_ENVIO AS tick_total_envio,
-            TICKET_TOTAL_TICKET AS tick_total
-        FROM gd_esquema.Maestra
-        WHERE TICKET_FECHA_HORA IS NOT NULL 
-        AND TICKET_SUBTOTAL_PRODUCTOS IS NOT NULL
-        AND TICKET_TOTAL_DESCUENTO_APLICADO IS NOT NULL
-        AND TICKET_TOTAL_DESCUENTO_APLICADO_MP IS NOT NULL
-        AND TICKET_TOTAL_ENVIO IS NOT NULL
-        AND TICKET_TOTAL_TICKET IS NOT NULL
-		AND TICKET_NUMERO IS NOT NULL
+    (
+        tick_id, tick_fecha_hora, tick_caja, tick_empleado, tick_tipo_comprobante, tick_total_productos,
+        tick_total_descuento, tick_total_descuento_mp, tick_total_envio, tick_total
+    )
+    SELECT 
+        m.TICKET_NUMERO AS tick_id,
+        m.TICKET_FECHA_HORA AS tick_fecha_hora,
+        m.CAJA_NUMERO AS tick_caja,
+        e.empl_id AS tick_empleado,
+        tc.tipo_comp_id AS tick_tipo_comprobante,
+        m.TICKET_SUBTOTAL_PRODUCTOS AS tick_total_productos,
+        m.TICKET_TOTAL_DESCUENTO_APLICADO AS tick_total_descuento,
+        m.TICKET_TOTAL_DESCUENTO_APLICADO_MP AS tick_total_descuento_mp,
+        m.TICKET_TOTAL_ENVIO AS tick_total_envio,
+        m.TICKET_TOTAL_TICKET AS tick_total
+    FROM 
+        gd_esquema.Maestra m
+    LEFT JOIN 
+        Empleado e ON m.EMPLEADO_DNI = e.empl_dni 
+                                  AND m.EMPLEADO_APELLIDO = e.empl_apellido 
+                                  AND m.EMPLEADO_NOMBRE = e.empl_nombre
+    LEFT JOIN 
+        Tipo_Comprobante tc ON m.TICKET_TIPO_COMPROBANTE = tc.tipo_comp_detalle
+    WHERE 
+        m.TICKET_FECHA_HORA IS NOT NULL 
+        AND m.TICKET_SUBTOTAL_PRODUCTOS IS NOT NULL
+        AND m.TICKET_TOTAL_DESCUENTO_APLICADO IS NOT NULL
+        AND m.TICKET_TOTAL_DESCUENTO_APLICADO_MP IS NOT NULL
+        AND m.TICKET_TOTAL_ENVIO IS NOT NULL
+        AND m.TICKET_TOTAL_TICKET IS NOT NULL
+        AND m.TICKET_NUMERO IS NOT NULL;
 END
 GO
+
 
 /* Estado */
 
