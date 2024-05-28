@@ -619,17 +619,15 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Sucursal
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Sucursal]
-        (sucu_numero,sucu_direccion,sucu_localidad,sucu_supermercado)
-    SELECT DISTINCT SUCURSAL_NOMBRE,SUCURSAL_DIRECCION,
-	 (SELECT TOP 1
-            loca_id
-        FROM [MONSTERS_INC].[Localidad]
-        WHERE loca_nombre = SUCURSAL_LOCALIDAD) as sucu_localidad,
-	 (SELECT TOP 1
-            super_id
-        FROM [MONSTERS_INC].[SUPERMERCADO]
-        WHERE [SUPERMERCADO].super_cuit = SUPER_CUIT) as sucu_supermercado			--Esta bien usar SUPER_CUIT?
-    FROM gd_esquema.Maestra;
+        (sucu_numero, sucu_direccion, sucu_localidad, sucu_supermercado)
+    SELECT DISTINCT
+        SUCURSAL_NOMBRE,
+        SUCURSAL_DIRECCION,
+        loc.loca_id AS sucu_localidad,
+        sm.super_id AS sucu_supermercado
+    FROM gd_esquema.Maestra AS M
+    LEFT JOIN [MONSTERS_INC].[Localidad] AS loc ON loc.loca_nombre = M.SUCURSAL_LOCALIDAD
+    LEFT JOIN [MONSTERS_INC].[Supermercado] AS sm ON sm.super_cuit = M.SUPER_CUIT;
 END
 GO
 
