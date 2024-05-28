@@ -895,6 +895,25 @@ BEGIN
 END
 GO
 
+/* Descuento_Medio_Pago */
+CREATE PROCEDURE [MONSTERS_INC].Migrar_Descuento_Medio_Pago
+AS
+BEGIN
+    INSERT INTO [MONSTERS_INC].Descuento_Medio_Pago 
+    (desc_descripcion, desc_medio_pago, desc_fecha_inicio, desc_fecha_fin, desc_porcentaje, desc_tope) 
+        SELECT DESCUENTO_DESCRIPCION AS desc_descripcion, DESCUENTO_FECHA_INICION AS desc_fecha_inicio, DESCUENTO_FECHA_FIN AS desc_fecha_fin,
+        DESCUENTO_PORCENTAJE_DESC AS desc_porcentaje, DESCUENTO_TOPE AS desc_tope, (
+            SELECT medio_pago_id 
+            FROM [MONSTERS_INC].Medio_Pago
+            WHERE PAGO_MEDIO_PAGO = medio_pago_nombre AND PAGO_TIPO_MEDIO_PAGO = medio_pago_tipo)
+        FROM gd_esquema.Maestra
+        WHERE DESCUENTO_DESCRIPCION IS NOT NULL 
+        AND DESCUENTO_FECHA_INICION IS NOT NULL
+        AND DESCUENTO_FECHA_FIN IS NOT NULL
+        AND DESCUENTO_PORCENTAJE_DESC IS NOT NULL
+        AND DESCUENTO_TOPE IS NOT NULL
+END
+
 /* Detalle Pago */
 
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Detalle_Pago
@@ -911,6 +930,7 @@ BEGIN
     FROM gd_esquema.Maestra
     WHERE CLIENTE_DNI IS NOT NULL AND PAGO_TARJETA_NRO IS NOT NULL
 END
+
 
 /* DATOS DIRECCION */
 CREATE PROCEDURE GRUPO_GENERICO.Migrar_Direccion
