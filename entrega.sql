@@ -111,10 +111,11 @@ CREATE TABLE [MONSTERS_INC].[Promocion_Por_Producto]
 CREATE TABLE [MONSTERS_INC].[Promocion]
 (
     [prom_id] numeric(18) NOT NULL IDENTITY,
+    [prom_codigo] decimal(18),
     [prom_descripcion] nvarchar(255),
 	[prom_fecha_inicio] datetime,
 	[prom_fecha_fin] datetime,
-	[prom_regla] numeric(18) NOT NULL
+	[prom_regla] numeric(18)
 );
 
 /* REGLA */
@@ -137,9 +138,8 @@ CREATE TABLE [MONSTERS_INC].[Supermercado]
     [super_nombre] nvarchar(4) NOT NULL,
     [super_razon_social] nvarchar(23) NOT NULL,
     [super_cuit] nvarchar(13) NOT NULL,
-    [super_iibb] nvarchar(14) NOT NULL,
+    [super_iibb] nvarchar(50) NOT NULL,
     [super_domicilio] nvarchar(30) NOT NULL,
-	[super_localidad] numeric(18) NOT NULL,
 	[super_fecha_inicio_actividad] date NOT NULL,
 	[super_condicion_fiscal] nvarchar(25) NOT NULL
 );
@@ -160,7 +160,7 @@ CREATE TABLE [MONSTERS_INC].[Item_Ticket]
     [item_tick_id] numeric(18) IDENTITY NOT NULL,
     [item_tick_ticket] numeric(18) NOT NULL,
     [item_tick_producto] numeric(18) NOT NULL,
-	[item_tick_promocion] numeric(18) NOT NULL,
+	[item_tick_promocion] numeric(18),
     [item_tick_cantidad] decimal(18,0),
     [item_tick_total] decimal(18,2),
     [item_tick_descuento_aplicado] decimal(18,2)
@@ -170,7 +170,8 @@ CREATE TABLE [MONSTERS_INC].[Item_Ticket]
 CREATE TABLE [MONSTERS_INC].[Caja]
 (
     [caja_id] numeric(18) IDENTITY NOT NULL,
-    [caja_tipo] nvarchar(10),
+    [caja_nro] decimal(18),
+    [caja_tipo] nvarchar(50),
 	[caja_sucursal] numeric(18) NOT NULL
 );
 
@@ -222,7 +223,7 @@ CREATE TABLE [MONSTERS_INC].[Tarjeta]
 CREATE TABLE [MONSTERS_INC].[Detalle_Pago]
 (
     [deta_id] numeric(18) NOT NULL IDENTITY,
-    [deta_cliente] numeric(18) NOT NULL,
+    [deta_cliente] numeric(18),
     [deta_tarjeta] numeric(18) NOT NULL,
     [deta_tarjeta_cuotas] decimal(18)
 );
@@ -273,7 +274,7 @@ CREATE TABLE [MONSTERS_INC].[Cliente]
     [clie_dni] numeric(18),
     [clie_nombre] nvarchar(50),
 	[clie_apellido] nvarchar(50),
-	[clie_domicilio] nvarchar(50),
+	[clie_domicilio] nvarchar(100),
 	[clie_localidad] numeric(18),
 	[clie_fecha_nacimiento] datetime,
 	[clie_fecha_registro] datetime,
@@ -314,9 +315,10 @@ CREATE TABLE [MONSTERS_INC].[Empleado]
 CREATE TABLE [MONSTERS_INC].[Ticket]
 (
     [tick_id] numeric(18) NOT NULL IDENTITY,
+    [tick_nro] decimal(18) NOT NULL,
     [tick_fecha_hora] datetime,
-	[tick_caja] numeric(18) NOT NULL,
-	[tick_empleado] numeric(18) NOT NULL,
+	[tick_caja] numeric(18),
+	[tick_empleado] numeric(18),
 	[tick_tipo_comprobante] numeric(18) NOT NULL,
 	[tick_total_productos] decimal(18,2),
 	[tick_total_descuento] decimal(18,2),
@@ -420,10 +422,6 @@ ALTER TABLE [MONSTERS_INC].[Promocion_Por_Producto]
 ALTER TABLE [MONSTERS_INC].[Promocion]
     ADD CONSTRAINT [FK_Promocion_prom_regla] FOREIGN KEY ([prom_regla])
     REFERENCES [MONSTERS_INC].[Regla]([reg_id]);
-
-ALTER TABLE [MONSTERS_INC].[Supermercado]
-    ADD CONSTRAINT [FK_Supermercado_super_localidad] FOREIGN KEY ([super_localidad])
-    REFERENCES [MONSTERS_INC].[Localidad](loca_id);
 
 ALTER TABLE [MONSTERS_INC].[Localidad]
     ADD CONSTRAINT [FK_Localidad_loca_provincia] FOREIGN KEY ([loca_provincia])
@@ -531,28 +529,21 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Provincia
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Provincia] (prov_nombre)
-    SELECT DISTINCT prov_nombre
-    FROM (
-        SELECT SUPER_PROVINCIA AS prov_nombre 
-        FROM gd_esquema.Maestra
-        WHERE SUPER_PROVINCIA IS NOT NULL
-        
-        UNION ALL
-        
-        SELECT SUCURSAL_PROVINCIA AS prov_nombre 
-        FROM gd_esquema.Maestra
-        WHERE SUCURSAL_PROVINCIA IS NOT NULL
-        
-        UNION ALL
-        
-        SELECT CLIENTE_PROVINCIA AS prov_nombre 
-        FROM gd_esquema.Maestra
-        WHERE CLIENTE_PROVINCIA IS NOT NULL
-    ) AS Provincias
-    WHERE prov_nombre NOT IN (SELECT prov_nombre FROM [MONSTERS_INC].[Provincia]);
+    SELECT DISTINCT SUPER_PROVINCIA AS prov_nombre
+    FROM gd_esquema.Maestra
+    WHERE SUPER_PROVINCIA NOT IN (SELECT prov_nombre FROM [MONSTERS_INC].[Provincia]);
+    
+    INSERT INTO [MONSTERS_INC].[Provincia] (prov_nombre)
+    SELECT DISTINCT SUCURSAL_PROVINCIA AS prov_nombre
+    FROM gd_esquema.Maestra
+    WHERE SUCURSAL_PROVINCIA NOT IN (SELECT prov_nombre FROM [MONSTERS_INC].[Provincia]);
+
+    INSERT INTO [MONSTERS_INC].[Provincia] (prov_nombre)
+    SELECT DISTINCT CLIENTE_PROVINCIA AS prov_nombre
+    FROM gd_esquema.Maestra
+    WHERE CLIENTE_PROVINCIA NOT IN (SELECT prov_nombre FROM [MONSTERS_INC].[Provincia]);
 END
 GO
-
 
 /* LOCALIDAD */
 
@@ -560,34 +551,37 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Localidad
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Localidad] (loca_nombre, loca_provincia)
-    SELECT DISTINCT
-        localidad_nombre, 
-        Provincia.prov_id AS loca_provincia
-    FROM (
-        SELECT SUPER_LOCALIDAD AS localidad_nombre, SUPER_PROVINCIA AS provincia_nombre
+        SELECT DISTINCT SUPER_LOCALIDAD AS localidad_nombre, prov_id AS loca_provincia
         FROM gd_esquema.Maestra
-        WHERE SUPER_LOCALIDAD IS NOT NULL
-        
-        UNION ALL
-        
-        SELECT SUCURSAL_LOCALIDAD AS localidad_nombre, SUCURSAL_PROVINCIA AS provincia_nombre
-        FROM gd_esquema.Maestra
-        WHERE SUCURSAL_LOCALIDAD IS NOT NULL
-        
-        UNION ALL
-        
-        SELECT CLIENTE_LOCALIDAD AS localidad_nombre, CLIENTE_PROVINCIA AS provincia_nombre
-        FROM gd_esquema.Maestra
-        WHERE CLIENTE_LOCALIDAD IS NOT NULL
-    ) AS Localidades
-    JOIN [MONSTERS_INC].[Provincia] Provincia 
-        ON Localidades.provincia_nombre = Provincia.prov_nombre
+        JOIN [MONSTERS_INC].[Provincia] Provincia ON SUPER_PROVINCIA = prov_nombre
     WHERE NOT EXISTS (
         SELECT 1 
         FROM [MONSTERS_INC].[Localidad] 
-        WHERE [MONSTERS_INC].[Localidad].loca_nombre = Localidades.localidad_nombre 
-          AND [MONSTERS_INC].[Localidad].loca_provincia = Provincia.prov_id
-    );
+        WHERE [MONSTERS_INC].[Localidad].loca_nombre = SUPER_LOCALIDAD
+            AND [MONSTERS_INC].[Localidad].loca_provincia = Provincia.prov_id
+    )   AND SUPER_LOCALIDAD IS NOT NULL
+
+    INSERT INTO [MONSTERS_INC].[Localidad] (loca_nombre, loca_provincia)
+        SELECT DISTINCT SUCURSAL_LOCALIDAD AS localidad_nombre, prov_id AS loca_provincia
+        FROM gd_esquema.Maestra
+        JOIN [MONSTERS_INC].[Provincia] Provincia ON SUCURSAL_PROVINCIA = prov_nombre
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM [MONSTERS_INC].[Localidad] 
+        WHERE [MONSTERS_INC].[Localidad].loca_nombre = SUCURSAL_LOCALIDAD
+            AND [MONSTERS_INC].[Localidad].loca_provincia = Provincia.prov_id
+    )    AND SUCURSAL_LOCALIDAD IS NOT NULL
+
+        INSERT INTO [MONSTERS_INC].[Localidad] (loca_nombre, loca_provincia)
+        SELECT DISTINCT CLIENTE_LOCALIDAD AS localidad_nombre, prov_id AS loca_provincia
+        FROM gd_esquema.Maestra
+        JOIN [MONSTERS_INC].[Provincia] Provincia ON CLIENTE_PROVINCIA = prov_nombre
+    WHERE NOT EXISTS (
+        SELECT 1 
+        FROM [MONSTERS_INC].[Localidad] 
+        WHERE [MONSTERS_INC].[Localidad].loca_nombre = CLIENTE_LOCALIDAD
+            AND [MONSTERS_INC].[Localidad].loca_provincia = Provincia.prov_id
+    )       AND CLIENTE_LOCALIDAD IS NOT NULL
 END
 GO
 
@@ -598,7 +592,7 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Supermercado
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Supermercado]
-        (super_nombre, super_razon_social, super_cuit, super_iibb, super_domicilio, super_fecha_inicio_actividad, super_condicion_fiscal, super_localidad)
+        (super_nombre, super_razon_social, super_cuit, super_iibb, super_domicilio, super_fecha_inicio_actividad, super_condicion_fiscal)
     SELECT DISTINCT
         SUPER_NOMBRE,
         SUPER_RAZON_SOC,
@@ -606,13 +600,10 @@ BEGIN
         SUPER_IIBB,
         SUPER_DOMICILIO,
         SUPER_FECHA_INI_ACTIVIDAD,
-        SUPER_CONDICION_FISCAL,
-        l.loca_id
-    FROM gd_esquema.Maestra AS M
-    LEFT JOIN [MONSTERS_INC].[Localidad] AS l ON l.loca_nombre = M.SUPER_LOCALIDAD;
+        SUPER_CONDICION_FISCAL
+    FROM gd_esquema.Maestra
 END
 GO
-
 
 /* SUCURSAL */
 
@@ -665,7 +656,7 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Promocion
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Promocion]
-        (prom_id, prom_descripcion, prom_fecha_inicio, prom_fecha_fin, prom_regla)
+        (prom_codigo, prom_descripcion, prom_fecha_inicio, prom_fecha_fin, prom_regla)
     SELECT DISTINCT
         PROMO_CODIGO,
         PROMOCION_DESCRIPCION,
@@ -741,7 +732,7 @@ BEGIN
         PR.prom_id AS prom_prod_promocion
     FROM gd_esquema.Maestra AS M
     INNER JOIN [MONSTERS_INC].[Producto] AS P ON P.prod_descripcion = M.PRODUCTO_DESCRIPCION AND P.prod_nombre = M.PRODUCTO_NOMBRE
-    INNER JOIN [MONSTERS_INC].[Promocion] AS PR ON PR.prom_descripcion = M.PROMOCION_DESCRIPCION AND PR.prom_id = M.PROMO_CODIGO
+    INNER JOIN [MONSTERS_INC].[Promocion] AS PR ON PR.prom_descripcion = M.PROMOCION_DESCRIPCION AND PR.prom_codigo = M.PROMO_CODIGO
 END
 GO
 
@@ -752,9 +743,9 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Caja
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Caja]
-        (caja_id, caja_tipo, caja_sucursal)
+        (caja_nro, caja_tipo, caja_sucursal)
     SELECT DISTINCT
-        CAJA_NUMERO AS caja_id,
+        CAJA_NUMERO AS caja_nro,
         CAJA_TIPO AS caja_tipo,
         S.sucu_id AS caja_sucursal
     FROM gd_esquema.Maestra AS M
@@ -910,13 +901,13 @@ AS
 BEGIN
     INSERT INTO [MONSTERS_INC].Ticket
     (
-        tick_id, tick_fecha_hora, tick_caja, tick_empleado, tick_tipo_comprobante, tick_total_productos,
+        tick_nro, tick_fecha_hora, tick_caja, tick_empleado, tick_tipo_comprobante, tick_total_productos,
         tick_total_descuento, tick_total_descuento_mp, tick_total_envio, tick_total
     )
     SELECT 
-        m.TICKET_NUMERO AS tick_id,
+        m.TICKET_NUMERO AS tick_nro,
         m.TICKET_FECHA_HORA AS tick_fecha_hora,
-        m.CAJA_NUMERO AS tick_caja,
+        c.caja_id AS tick_caja,
         e.empl_id AS tick_empleado,
         tc.tipo_comp_id AS tick_tipo_comprobante,
         m.TICKET_SUBTOTAL_PRODUCTOS AS tick_total_productos,
@@ -932,6 +923,8 @@ BEGIN
                                   AND m.EMPLEADO_NOMBRE = e.empl_nombre
     LEFT JOIN 
         Tipo_Comprobante tc ON m.TICKET_TIPO_COMPROBANTE = tc.tipo_comp_detalle
+    LEFT JOIN
+        Caja c ON m.CAJA_NUMERO = c.caja_nro
     WHERE 
         m.TICKET_FECHA_HORA IS NOT NULL 
         AND m.TICKET_SUBTOTAL_PRODUCTOS IS NOT NULL
@@ -978,16 +971,16 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Envio
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Envio]
-        (envio_costo, envio_fecha, envio_hora_inicio, envio_hora_fin, envio_cliente, envio_entrega, envio_estado, envio_ticket)
+        (envio_ticket, envio_fecha, envio_hora_inicio, envio_hora_fin, envio_cliente, envio_costo, envio_entrega, envio_estado)
     SELECT 
-        m.ENVIO_COSTO, 
-        m.ENVIO_FECHA_PROGRAMADA,
-        m.ENVIO_HORA_INICIO,
-        m.ENVIO_HORA_FIN,
+        t.tick_id AS envio_ticket,
+        m.ENVIO_FECHA_PROGRAMADA AS envio_fecha,
+        m.ENVIO_HORA_INICIO AS envio_hora_inicio,
+        m.ENVIO_HORA_FIN AS envio_hora_fin,
         c.clie_id AS envio_cliente, 
+        m.ENVIO_COSTO AS envio_costo, 
         e.entr_id AS envio_entrega,
-        es.esta_id AS envio_estado,
-        t.tick_id AS envio_ticket
+        es.esta_id AS envio_estado
     FROM 
         gd_esquema.Maestra m
     LEFT JOIN 
@@ -999,9 +992,8 @@ BEGIN
     LEFT JOIN 
         Estado es ON m.ENVIO_ESTADO = es.esta_descripcion
     LEFT JOIN 
-        Ticket t ON m.TICKET_TIPO_COMPROBANTE = t.tick_tipo_comprobante 
-                 AND m.TICKET_FECHA_HORA = t.tick_fecha_hora 
-                 AND m.TICKET_NUMERO = t.tick_id
+        Ticket t ON m.TICKET_FECHA_HORA = t.tick_fecha_hora 
+                 AND m.TICKET_NUMERO = t.tick_nro
     WHERE 
         m.ENVIO_COSTO IS NOT NULL
         AND m.ENVIO_FECHA_PROGRAMADA IS NOT NULL
@@ -1026,7 +1018,7 @@ BEGIN
         TICKET_TOTAL_DESCUENTO_APLICADO AS item_tick_descuento_aplicado
     FROM gd_esquema.Maestra
     LEFT JOIN [MONSTERS_INC].Ticket t ON TICKET_FECHA_HORA = t.tick_fecha_hora 
-        AND TICKET_NUMERO = t.tick_id
+        AND TICKET_NUMERO = t.tick_nro
     LEFT JOIN [MONSTERS_INC].Producto pr ON PRODUCTO_NOMBRE = prod_nombre 
         AND PRODUCTO_DESCRIPCION = prod_descripcion 
         AND PRODUCTO_PRECIO = prod_precio
@@ -1057,7 +1049,7 @@ BEGIN
     LEFT JOIN [MONSTERS_INC].Tarjeta ON PAGO_TARJETA_NRO = tarj_numero 
         AND PAGO_TARJETA_FECHA_VENC = tarj_vencimiento_tarjeta
     LEFT JOIN [MONSTERS_INC].Detalle_Pago ON deta_tarjeta = tarj_id
-    LEFT JOIN [MONSTERS_INC].Ticket ON TICKET_NUMERO = tick_id AND TICKET_FECHA_HORA = tick_fecha_hora
+    LEFT JOIN [MONSTERS_INC].Ticket ON TICKET_NUMERO = tick_nro AND TICKET_FECHA_HORA = tick_fecha_hora
 END
 GO
 
@@ -1089,7 +1081,6 @@ execute MONSTERS_INC.[Migrar_Provincia]
 execute MONSTERS_INC.[Migrar_Entrega]
 execute MONSTERS_INC.[Migrar_Estado]
 execute MONSTERS_INC.[Migrar_Tarjeta]
-execute MONSTERS_INC.[Migrar_Marca_Tarjeta]
 execute MONSTERS_INC.[Migrar_Medio_De_Pago]
 execute MONSTERS_INC.[Migrar_Tipo_Comprobante]
 execute MONSTERS_INC.[Migrar_Categoria_Mayor]
@@ -1097,19 +1088,13 @@ execute MONSTERS_INC.[Migrar_Regla]
 
 
 /* Tablas con FK */
-execute MONSTERS_INC.[Migrar_Categoria_Local]
 execute MONSTERS_INC.[Migrar_Promocion]
-execute MONSTERS_INC.[Migrar_Direccion]
 execute MONSTERS_INC.[Migrar_Sub_Categoria]
-execute MONSTERS_INC.[Migrar_Rep_Localidad_Activa]
 execute MONSTERS_INC.[Migrar_Localidad]
 execute MONSTERS_INC.[Migrar_Supermercado]
 execute MONSTERS_INC.[Migrar_Sucursal]
-execute MONSTERS_INC.[Migrar_Cupon]
 execute MONSTERS_INC.[Migrar_Caja] 
-execute MONSTERS_INC.[Migrar_Envio]
 execute MONSTERS_INC.[Migrar_Producto]
-execute MONSTERS_INC.[Migrar_Medio_Pago]
 execute MONSTERS_INC.[Migrar_Empleado]
 execute MONSTERS_INC.[Migrar_Descuento_Medio_Pago]
 execute MONSTERS_INC.[Migrar_Ticket]
@@ -1118,12 +1103,12 @@ execute MONSTERS_INC.[Migrar_Cliente]
 execute MONSTERS_INC.[Migrar_Envio]
 execute MONSTERS_INC.[Migrar_Detalle_Pago]
 execute MONSTERS_INC.[Migrar_Pago]
-execute MONSTERS_INC.[Migrar_Medio_Pago_Aplicado]
+execute MONSTERS_INC.[Migrar_Descuento_Medio_Pago_Aplicado]
 execute MONSTERS_INC.[Migrar_Promocion_Por_Producto]
 
 PRINT '--- TABLAS MIGRADAS CORRECTAMENTE ---'
 
-
+/*
 /* CREACION DE INDICES */
 
 PRINT '--- CREACION DE INDICES ---'
@@ -1178,3 +1163,4 @@ CREATE INDEX IDX_LOCAL_ID ON [GRUPO_GENERICO].[Local] (local_id);
 
 -- Categoria_Local
 CREATE INDEX IDX_CAT_ID ON [GRUPO_GENERICO].[Categoria_Local] (cat_id);
+*/
