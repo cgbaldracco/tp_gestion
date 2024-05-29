@@ -705,20 +705,26 @@ AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Producto]
         (prod_descripcion, prod_marca, prod_nombre, prod_precio, prod_subcategoria)
-    SELECT DISTINCT
+    SELECT
         PRODUCTO_DESCRIPCION,
         PRODUCTO_MARCA,
         PRODUCTO_NOMBRE,
-        PRODUCTO_PRECIO,
-        SC.subc_id AS prod_subcategoria
+        MAX(PRODUCTO_PRECIO) AS prod_precio,
+        MIN(SC.subc_id) AS prod_subcategoria 
     FROM gd_esquema.Maestra AS M
     LEFT JOIN [MONSTERS_INC].[Subcategoria] AS SC ON SC.subc_descripcion = M.PRODUCTO_SUB_CATEGORIA
+    LEFT JOIN [MONSTERS_INC].[Categoria_Mayor] AS CM ON CM.catm_descripcion = M.PRODUCTO_CATEGORIA AND CM.catm_id = SC.subc_categoria_mayor
     WHERE M.PRODUCTO_DESCRIPCION IS NOT NULL
         AND M.PRODUCTO_MARCA IS NOT NULL
         AND M.PRODUCTO_NOMBRE IS NOT NULL
-        AND M.PRODUCTO_PRECIO IS NOT NULL;
+        AND M.PRODUCTO_PRECIO IS NOT NULL
+    GROUP BY
+        PRODUCTO_DESCRIPCION,
+        PRODUCTO_MARCA,
+        PRODUCTO_NOMBRE;
 END
 GO
+
 
 /* Promocion Por Producto */
 
