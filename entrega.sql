@@ -664,10 +664,10 @@ BEGIN
         PROMOCION_FECHA_FIN,
         R.reg_id AS prom_regla
     FROM gd_esquema.Maestra AS M
-    LEFT JOIN [MONSTERS_INC].[Regla] AS R ON R.reg_descripcion = M.REGLA_DESCRIPCION;
+    LEFT JOIN [MONSTERS_INC].[Regla] AS R ON R.reg_descripcion = M.REGLA_DESCRIPCION
+    WHERE PROMO_CODIGO IS NOT NULL
 END
 GO
-
 
 /* CATEGORÍA MAYOR */
 
@@ -904,7 +904,7 @@ BEGIN
         tick_nro, tick_fecha_hora, tick_caja, tick_empleado, tick_tipo_comprobante, tick_total_productos,
         tick_total_descuento, tick_total_descuento_mp, tick_total_envio, tick_total
     )
-    SELECT 
+    SELECT DISTINCT
         m.TICKET_NUMERO AS tick_nro,
         m.TICKET_FECHA_HORA AS tick_fecha_hora,
         c.caja_id AS tick_caja,
@@ -918,15 +918,17 @@ BEGIN
     FROM 
         gd_esquema.Maestra m
     LEFT JOIN 
-        Empleado e ON m.EMPLEADO_DNI = e.empl_dni 
+        [MONSTERS_INC].Empleado e ON m.EMPLEADO_DNI = e.empl_dni 
                                   AND m.EMPLEADO_APELLIDO = e.empl_apellido 
                                   AND m.EMPLEADO_NOMBRE = e.empl_nombre
     LEFT JOIN 
-        Tipo_Comprobante tc ON m.TICKET_TIPO_COMPROBANTE = tc.tipo_comp_detalle
+        [MONSTERS_INC].Tipo_Comprobante tc ON m.TICKET_TIPO_COMPROBANTE = tc.tipo_comp_detalle
     LEFT JOIN
-        Caja c ON m.CAJA_NUMERO = c.caja_nro
+        [MONSTERS_INC].Caja c ON m.CAJA_NUMERO = c.caja_nro AND e.empl_sucursal = c.caja_sucursal
     WHERE 
-        m.TICKET_FECHA_HORA IS NOT NULL 
+        m.TICKET_FECHA_HORA IS NOT NULL
+        AND e.empl_id IS NOT NULL 
+        AND c.caja_id IS NOT NULL
         AND m.TICKET_SUBTOTAL_PRODUCTOS IS NOT NULL
         AND m.TICKET_TOTAL_DESCUENTO_APLICADO IS NOT NULL
         AND m.TICKET_TOTAL_DESCUENTO_APLICADO_MP IS NOT NULL
@@ -935,7 +937,6 @@ BEGIN
         AND m.TICKET_NUMERO IS NOT NULL;
 END
 GO
-
 
 /* Estado */
 
@@ -1020,8 +1021,10 @@ BEGIN
     LEFT JOIN [MONSTERS_INC].Ticket t ON TICKET_FECHA_HORA = t.tick_fecha_hora 
         AND TICKET_NUMERO = t.tick_nro
     LEFT JOIN [MONSTERS_INC].Producto pr ON PRODUCTO_NOMBRE = prod_nombre 
-        AND PRODUCTO_DESCRIPCION = prod_descripcion 
+        AND PRODUCTO_DESCRIPCION = prod_descripcion
         AND PRODUCTO_PRECIO = prod_precio
+    LEFT JOIN [MONSTERS_INC].Subcategoria ON prod_subcategoria = subc_id 
+        AND PRODUCTO_SUB_CATEGORIA = subc_descripcion
     LEFT JOIN [MONSTERS_INC].Promocion pm ON PROMOCION_DESCRIPCION = prom_descripcion 
         AND PROMOCION_FECHA_INICIO = prom_fecha_inicio
         AND PROMOCION_FECHA_FIN = prom_fecha_fin
