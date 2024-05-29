@@ -1004,30 +1004,34 @@ END
 GO
 
 /* Item Ticket */
-
+-- 37k
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Item_Ticket
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Item_Ticket]
         (item_tick_ticket, item_tick_producto, item_tick_promocion, item_tick_cantidad, item_tick_total, item_tick_descuento_aplicado)
-    SELECT 
-        t.tick_id AS item_tick_ticket, 
-        pr.prod_id AS item_tick_producto, 
+    SELECT
+        t.tick_id AS item_tick_ticket,
+        pr.prod_id AS item_tick_producto,
         pm.prom_id AS item_tick_promocion,
-        TICKET_DET_CANTIDAD AS item_tick_cantidad, 
-        TICKET_TOTAL_TICKET AS item_tick_total, 
+        TICKET_DET_CANTIDAD AS item_tick_cantidad,
+        TICKET_DET_PRECIO AS item_tick_total,
         TICKET_TOTAL_DESCUENTO_APLICADO AS item_tick_descuento_aplicado
     FROM gd_esquema.Maestra
     LEFT JOIN [MONSTERS_INC].Ticket t ON TICKET_FECHA_HORA = t.tick_fecha_hora 
         AND TICKET_NUMERO = t.tick_nro
-    LEFT JOIN [MONSTERS_INC].Producto pr ON PRODUCTO_NOMBRE = prod_nombre 
+    INNER JOIN [MONSTERS_INC].Subcategoria ON PRODUCTO_SUB_CATEGORIA = subc_descripcion
+    INNER JOIN [MONSTERS_INC].Categoria_Mayor ON catm_descripcion = PRODUCTO_CATEGORIA
+        AND catm_id = subc_categoria_mayor
+    INNER JOIN [MONSTERS_INC].Producto pr ON PRODUCTO_NOMBRE = prod_nombre 
         AND PRODUCTO_DESCRIPCION = prod_descripcion
         AND PRODUCTO_PRECIO = prod_precio
-    LEFT JOIN [MONSTERS_INC].Subcategoria ON prod_subcategoria = subc_id 
-        AND PRODUCTO_SUB_CATEGORIA = subc_descripcion
+        AND subc_id = prod_subcategoria
+    LEFT JOIN [MONSTERS_INC].Regla ON REGLA_DESCRIPCION = reg_descripcion
     LEFT JOIN [MONSTERS_INC].Promocion pm ON PROMOCION_DESCRIPCION = prom_descripcion 
         AND PROMOCION_FECHA_INICIO = prom_fecha_inicio
         AND PROMOCION_FECHA_FIN = prom_fecha_fin
+        AND prom_regla = reg_id
     WHERE TICKET_DET_CANTIDAD IS NOT NULL
     AND TICKET_TOTAL_TICKET IS NOT NULL
     AND TICKET_TOTAL_DESCUENTO_APLICADO IS NOT NULL
@@ -1053,6 +1057,8 @@ BEGIN
         AND PAGO_TARJETA_FECHA_VENC = tarj_vencimiento_tarjeta
     LEFT JOIN [MONSTERS_INC].Detalle_Pago ON deta_tarjeta = tarj_id
     LEFT JOIN [MONSTERS_INC].Ticket ON TICKET_NUMERO = tick_nro AND TICKET_FECHA_HORA = tick_fecha_hora
+    WHERE PAGO_TIPO_MEDIO_PAGO IS NOT NULL
+    AND PAGO_MEDIO_PAGO IS NOT NULL
 END
 GO
 
@@ -1068,7 +1074,8 @@ BEGIN
         desc_id AS desc_apli_cod_descuento_mp,
         PAGO_DESCUENTO_APLICADO AS desc_apli_descuento_aplicado
     FROM gd_esquema.Maestra
-    INNER JOIN [MONSTERS_INC].Pago ON TICKET_NUMERO = pago_ticket
+    INNER JOIN [MONSTERS_INC].Ticket ON TICKET_NUMERO = tick_nro
+    INNER JOIN [MONSTERS_INC].Pago ON tick_id = pago_ticket
     INNER JOIN [MONSTERS_INC].Descuento_Medio_Pago ON DESCUENTO_DESCRIPCION = desc_descripcion 
         AND DESCUENTO_CODIGO = desc_id
     --WHERE TICKET_NUMERO IS NOT NULL
