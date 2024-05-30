@@ -1026,21 +1026,18 @@ BEGIN
     FROM gd_esquema.Maestra
     LEFT JOIN [MONSTERS_INC].Ticket t ON TICKET_FECHA_HORA = t.tick_fecha_hora 
         AND TICKET_NUMERO = t.tick_nro
-    INNER JOIN [MONSTERS_INC].Subcategoria ON PRODUCTO_SUB_CATEGORIA = subc_descripcion
-    INNER JOIN [MONSTERS_INC].Categoria_Mayor ON catm_descripcion = PRODUCTO_CATEGORIA
-        AND catm_id = subc_categoria_mayor
-    INNER JOIN [MONSTERS_INC].Producto pr ON PRODUCTO_NOMBRE = prod_nombre 
-        AND PRODUCTO_DESCRIPCION = prod_descripcion
-        AND PRODUCTO_PRECIO = prod_precio
-        AND subc_id = prod_subcategoria
+    LEFT JOIN [MONSTERS_INC].Producto pr ON PRODUCTO_NOMBRE = pr.prod_nombre 
+        AND PRODUCTO_DESCRIPCION = pr.prod_descripcion
+        AND PRODUCTO_MARCA = pr.prod_marca
     LEFT JOIN [MONSTERS_INC].Regla ON REGLA_DESCRIPCION = reg_descripcion
-    LEFT JOIN [MONSTERS_INC].Promocion pm ON PROMOCION_DESCRIPCION = prom_descripcion 
-        AND PROMOCION_FECHA_INICIO = prom_fecha_inicio
-        AND PROMOCION_FECHA_FIN = prom_fecha_fin
-        AND prom_regla = reg_id
+    LEFT JOIN [MONSTERS_INC].Promocion pm ON PROMOCION_DESCRIPCION = pm.prom_descripcion 
+        AND PROMOCION_FECHA_INICIO = pm.prom_fecha_inicio
+        AND PROMOCION_FECHA_FIN = pm.prom_fecha_fin
+        AND pm.prom_regla = reg_id
     WHERE TICKET_DET_CANTIDAD IS NOT NULL
     AND TICKET_TOTAL_TICKET IS NOT NULL
     AND TICKET_TOTAL_DESCUENTO_APLICADO IS NOT NULL
+    AND pr.prod_id IS NOT NULL
 END
 GO
 
@@ -1124,59 +1121,81 @@ execute MONSTERS_INC.[Migrar_Promocion_Por_Producto]
 
 PRINT '--- TABLAS MIGRADAS CORRECTAMENTE ---'
 
-/*
+
 /* CREACION DE INDICES */
 
 PRINT '--- CREACION DE INDICES ---'
 
--- Tipo_Movilidad 
-CREATE INDEX IDX_TIPO_MOVILIDAD_ID ON [GRUPO_GENERICO].[Tipo_Movilidad] (tipo_movilidad_id);
+/*  PROVINCIA   */
+CREATE INDEX IDX_PROVINCIA_ID ON [MONSTERS_INC].[Provincia] (prov_id);
 
--- Provincia 
-CREATE INDEX IDX_PROVINCIA_ID ON [GRUPO_GENERICO].[Provincia] (provincia_id);
+/*  ENTREGA   */
+CREATE INDEX IDX_ENTREGA_ID ON [MONSTERS_INC].[Entrega] (entr_id);
 
--- Pedido_Estado 
-CREATE INDEX IDX_PEDIDO_ESTADO_ID ON [GRUPO_GENERICO].[Pedido_Estado] (pedido_estado_id);
+/*  ESTADO   */
+CREATE INDEX IDX_ESTADO_ID ON [MONSTERS_INC].[Estado] (esta_id);
 
--- Producto 
-CREATE INDEX IDX_PROD_ID ON [GRUPO_GENERICO].[Producto] (prod_id);
+/*  TARJETA   */
+CREATE INDEX IDX_TARJETA_ID ON [MONSTERS_INC].[Tarjeta] (tarj_id);
 
--- Dia 
-CREATE INDEX IDX_DIA_ID ON [GRUPO_GENERICO].[Dia] (dia_id);
+/*  MEDIO DE PAGO   */
+CREATE INDEX IDX_MEDIO_PAGO_ID ON [MONSTERS_INC].[Medio_Pago] (medio_pago_id);
 
--- Localidad 
-CREATE INDEX IDX_LOCALIDAD_ID ON [GRUPO_GENERICO].[Localidad] (localidad_id);
+/*  TIPO COMPROBANTE   */
+CREATE INDEX IDX_TIPO_COMPROBANTE_ID ON [MONSTERS_INC].[Tipo_Comprobante] (tipo_comp_id);
 
--- Usuario 
-CREATE INDEX IDX_US_ID ON [GRUPO_GENERICO].[Usuario] (us_id);
+/*  CATEGORIA MAYOR   */
+CREATE INDEX IDX_CATEGORIA_MAYOR_ID ON [MONSTERS_INC].[Categoria_Mayor] (catm_id);
 
--- Direccion 
-CREATE INDEX IDX_DIR_ID ON [GRUPO_GENERICO].[Direccion] (dir_id);
+/*  REGLA   */
+CREATE INDEX IDX_REGLA_ID ON [MONSTERS_INC].[Regla] (reg_id);
 
--- Tipo_Paquete 
-CREATE INDEX IDX_TIPO_PAQUETE_ID ON [GRUPO_GENERICO].[Tipo_Paquete] (tipo_paquete_id);
+/*  PROMOCION   */
+CREATE INDEX IDX_PROMOCION_ID ON [MONSTERS_INC].[Promocion] (prom_id);
 
--- Producto_Local 
-CREATE INDEX IDX_PROD_LOC_ID ON [GRUPO_GENERICO].[Producto_Local] (prod_loc_producto_id, prod_loc_local_id);
+/*  SUB CATEGORIA   */
+CREATE INDEX IDX_SUBCATEGORIA_ID ON [MONSTERS_INC].[Subcategoria] (subc_id);
 
--- Item_Pedido 
-CREATE INDEX IDX_ITEM_PED_ID ON [GRUPO_GENERICO].[Item_Pedido] (item_ped_id);
+/*  LOCALIDAD   */
+CREATE INDEX IDX_LOCALIDAD_ID ON [MONSTERS_INC].[Localidad] (loca_id);
 
--- Reclamo 
-CREATE INDEX IDX_RECLAMO_ID ON [GRUPO_GENERICO].[Reclamo] (reclamo_nro);
+/*  SUPERMERCADO   */
+CREATE INDEX IDX_SUPERMERCADO_ID ON [MONSTERS_INC].[Supermercado] (super_id);
 
--- Reclamo_Estado 
-CREATE INDEX IDX_RECLAMO_ESTADO_ID ON [GRUPO_GENERICO].[Reclamo_Estado] (reclamo_estado_id);
+/*  SUCURSAL   */
+CREATE INDEX IDX_SUCURSAL_ID ON [MONSTERS_INC].[Sucursal] (sucu_id);
 
--- Reclamo_Tipo 
-CREATE INDEX IDX_RECLAMO_TIPO_ID ON [GRUPO_GENERICO].[Reclamo_Tipo] (reclamo_tipo_id);
+/*  CAJA   */
+CREATE INDEX IDX_CAJA_ID ON [MONSTERS_INC].[Caja] (caja_id);
 
--- Operador_Reclamo 
-CREATE INDEX IDX_OPERADOR_REC_ID ON [GRUPO_GENERICO].[Operador_Reclamo] (operador_rec_id);
+/*  PRODUCTO   */
+CREATE INDEX IDX_PROD_ID ON [MONSTERS_INC].[Producto] (prod_id);
 
--- Local 
-CREATE INDEX IDX_LOCAL_ID ON [GRUPO_GENERICO].[Local] (local_id);
+/*  EMPLEADO   */
+CREATE INDEX IDX_EMPLEADO_ID ON [MONSTERS_INC].[Empleado] (empl_id);
 
--- Categoria_Local
-CREATE INDEX IDX_CAT_ID ON [GRUPO_GENERICO].[Categoria_Local] (cat_id);
-*/
+/*  DESCUENTO MEDIO PAGO   */
+CREATE INDEX IDX_DESCUENTO_MEDIO_PAGO_ID ON [MONSTERS_INC].[Descuento_Medio_Pago] (desc_id);
+
+/*  TICKET   */
+CREATE INDEX IDX_TICKET_ID ON [MONSTERS_INC].[Ticket] (tick_id);
+
+/*  ITEM TICKET   */
+CREATE INDEX IDX_ITEM_TICKET_ID ON [MONSTERS_INC].[Item_Ticket] (item_tick_id);
+
+/*  CLIENTE   */
+CREATE INDEX IDX_CLIENTE_ID ON [MONSTERS_INC].[Cliente] (clie_id);
+
+/*  ENVIO   */
+CREATE INDEX IDX_ENVIO_ID ON [MONSTERS_INC].[Envio] (envio_id);
+
+/*  DETALLE PAGO   */
+CREATE INDEX IDX_DETALLE_PAGO_ID ON [MONSTERS_INC].[Detalle_Pago] (deta_id);
+
+/*  DESCUENTO MEDIO PAGO APLICADO   */
+CREATE INDEX IDX_ESCUENTO_MEDIO_PAGO_APLICADO_ID ON [MONSTERS_INC].[Descuento_Medio_Pago_Aplicado] (desc_apli_id);
+
+/*  PROMOCION POR PRODUCTO   */
+CREATE INDEX IDX_PROMOCION_POR_PRODUCTO_ID ON [MONSTERS_INC].[Promocion_Por_Producto] (prom_prod_promocion, prom_prod_producto);
+
+PRINT '--- FINALIZACION DE EJECUCION ---'
