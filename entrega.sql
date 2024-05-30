@@ -1074,16 +1074,15 @@ AS
 BEGIN
     INSERT INTO [MONSTERS_INC].Descuento_Medio_Pago_Aplicado
     (desc_apli_pago, desc_apli_cod_descuento_mp , desc_apli_descuento_aplicado)
-    SELECT 
-        pago_id AS desc_apli_pago,
-        desc_id AS desc_apli_cod_descuento_mp,
-        PAGO_DESCUENTO_APLICADO AS desc_apli_descuento_aplicado
-    FROM gd_esquema.Maestra
-    INNER JOIN [MONSTERS_INC].Ticket ON TICKET_NUMERO = tick_nro
-    INNER JOIN [MONSTERS_INC].Pago ON tick_id = pago_ticket
-    INNER JOIN [MONSTERS_INC].Descuento_Medio_Pago ON DESCUENTO_DESCRIPCION = desc_descripcion 
-        AND DESCUENTO_CODIGO = desc_id
-    --WHERE TICKET_NUMERO IS NOT NULL
+    SELECT
+        p.pago_id AS desc_apli_pago,
+        d.desc_id AS desc_apli_cod_descuento_mp,
+        m.PAGO_DESCUENTO_APLICADO AS desc_apli_descuento_aplicado
+    FROM gd_esquema.Maestra m
+    INNER JOIN [MONSTERS_INC].Ticket t ON m.TICKET_NUMERO = t.tick_nro
+    INNER JOIN [MONSTERS_INC].Pago p ON tick_id = p.pago_ticket AND p.pago_fecha = m.PAGO_FECHA
+    INNER JOIN [MONSTERS_INC].Descuento_Medio_Pago d ON m.DESCUENTO_DESCRIPCION = d.desc_descripcion 
+        AND m.DESCUENTO_CODIGO = d.desc_id
 END
 GO
 
