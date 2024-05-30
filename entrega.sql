@@ -737,8 +737,11 @@ BEGIN
         P.prod_id AS prom_prod_producto,
         PR.prom_id AS prom_prod_promocion
     FROM gd_esquema.Maestra AS M
-    INNER JOIN [MONSTERS_INC].[Producto] AS P ON P.prod_descripcion = M.PRODUCTO_DESCRIPCION AND P.prod_nombre = M.PRODUCTO_NOMBRE
-    INNER JOIN [MONSTERS_INC].[Promocion] AS PR ON PR.prom_descripcion = M.PROMOCION_DESCRIPCION AND PR.prom_codigo = M.PROMO_CODIGO
+    INNER JOIN [MONSTERS_INC].[Producto] AS P ON P.prod_descripcion = M.PRODUCTO_DESCRIPCION 
+        AND P.prod_nombre = M.PRODUCTO_NOMBRE 
+        AND P.prod_marca = M.PRODUCTO_MARCA
+    INNER JOIN [MONSTERS_INC].[Promocion] AS PR ON PR.prom_descripcion = M.PROMOCION_DESCRIPCION 
+        AND PR.prom_codigo = M.PROMO_CODIGO
 END
 GO
 
