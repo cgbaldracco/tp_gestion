@@ -512,3 +512,70 @@ EXEC [MONSTERS_INC].Migrar_BI_Empleado
 
 /* CREACION DE VISTAS */
 
+-----------------------------------------------------------------------------  1
+CREATE VIEW MONSTERS_INC_Vista_Ticket_Promedio_Mensual AS
+SELECT
+    (v.cantidad_productos*v.importe_unitario)/v.cantidad_productos AS PromedioMes,
+    u.localidad_desc,
+    t.bi_tiempo_anio AS Año,
+    t.bi_tiempo_mes AS Mes
+FROM MONSTERS_INC.BI_Hechos_Venta v
+	JOIN MONSTERS_INC.BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
+	JOIN MONSTERS_INC.BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
+GROUP BY
+    t.bi_tiempo_mes,
+    t.bi_tiempo_anio,
+    u.localidad_desc;
+GO
+
+-----------------------------------------------------------------------------  2
+CREATE VIEW MONSTERS_INC_Vista_Cantidad_Unidades_Promedio AS
+SELECT
+	(v.cantidad_productos*v.importe_unitario)/v.cantidad_productos as Promedio,
+	--para cada turno
+	tu.turno_desc as Turno,
+    --para cada cuatrimestre
+	t.bi_tiempo_cuatrimestre as Cuatrimestre,
+    --para cada anio
+	t.bi_tiempo_anio as Año
+FROM MONSTERS_INC.BI_Hechos_Venta v
+	join MONSTERS_INC.BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
+	join MONSTERS_INC.BI_Turno tu on tu.bi_turno_id = v.bi_turno_id
+	join MONSTERS_INC.BI_Ticket i on i.bi_ticket_id = v.bi_ticket
+GROUP BY
+	--3,
+	tu.turno_desc,
+	t.bi_tiempo_cuatrimestre,
+	t.bi_tiempo_cuatrimestre;
+GO
+
+-----------------------------------------------------------------------------  3
+
+CREATE VIEW MONSTERS_INC_BI_Porcentaje_Anual_Cuatrimestre AS
+SELECT
+    MONSTERS_INC.BI_Resolver_Rango_Etario(e.empleado_fecha_nacimiento) as RangoEtario, -- falta atributo fecha nacimiento
+    c.caja_desc as TipoCaja,
+    t.bi_tiempo_cuatrimestre as Cuatrimestre,
+    (
+        SUM(v.cantidad_productos*v.importe_unitario)/
+        (SELECT SUM(v2.cantidad_productos*v2.importe_unitario)
+		FROM  MONSTERS_INC.BI_Hechos_Venta v2
+		JOIN  MONSTERS_INC.BI_Tiempo t2 ON v2.bi_tiempo_id = t2.bi_tiempo_id
+		WHERE t2.bi_tiempo_anio = t.bi_tiempo_anio) * 100 ) as Porcentaje
+FROM 
+    MONSTERS_INC.BI_Hechos_Venta v
+	JOIN MONSTERS_INC.BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
+	JOIN MONSTERS_INC.BI_Caja_Tipo c ON c.bi_caja_tipo_id = v.bi_caja_tipo_id
+	JOIN MONSTERS_INC.BI_Empleado e ON v.bi_empleado_id = e.bi_empleado_id
+	JOIN MONSTERS_INC.BI_Rango_Etario r on r.bi_rango_etario_id = e.bi_empleado_id		--esto al pedo creo
+GROUP BY
+    MONSTERS_INC.BI_Resolver_Rango_Etario(e.empleado_fecha_nacimiento),		-- falta atributo fecha nacimiento
+	r.rango_etario_desc,													-- estop o el de arriba(aca no esta conectado con empleado creo)
+    c.caja_desc,	
+    t.bi_tiempo_cuatrimestre,
+    t.bi_tiempo_anio;
+GO
+
+-----------------------------------------------------------------------------  4
+
+
