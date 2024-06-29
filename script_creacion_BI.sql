@@ -525,7 +525,7 @@ FROM MONSTERS_INC.BI_Hechos_Venta v
 GROUP BY
     t.bi_tiempo_mes,
     t.bi_tiempo_anio,
-    u.localidad_desc;
+    u.localidad_desc
 GO
 
 -----------------------------------------------------------------------------  2
@@ -546,7 +546,7 @@ GROUP BY
 	--3,
 	tu.turno_desc,
 	t.bi_tiempo_cuatrimestre,
-	t.bi_tiempo_cuatrimestre;
+	t.bi_tiempo_cuatrimestre
 GO
 
 -----------------------------------------------------------------------------  3
@@ -573,9 +573,63 @@ GROUP BY
 	r.rango_etario_desc,													-- estop o el de arriba(aca no esta conectado con empleado creo)
     c.caja_desc,	
     t.bi_tiempo_cuatrimestre,
-    t.bi_tiempo_anio;
+    t.bi_tiempo_anio
 GO
 
 -----------------------------------------------------------------------------  4
 
+CREATE VIEW MONSTERS_INC_Vista_Cantidad_Ventas_Por_Turno_ AS
+SELECT
+    u.localidad_desc as Localidad,
+    t.bi_tiempo_mes as Mes,
+    t.bi_tiempo_anio as Año,
+	tu.turno_desc as Turno,
+    count(*) as v.cantidad_productos
+FROM MONSTERS_INC.BI_Hechos_Venta v
+    JOIN MONSTERS_INC.BI_Tiempo t ON t.bi_tiempo_id = v.bi_tiempo_id
+	JOIN MONSTERS_INC.BI_Turno tu ON tu.bi_turno_id = v.bi_turno_id
+    JOIN MONSTERS_INC.BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
+GROUP BY
+    tu.turno_desc,
+	u.localidad_desc,
+    t.bi_tiempo_mes,
+    t.bi_tiempo_anio
+GO
 
+-----------------------------------------------------------------------------  5
+
+CREATE VIEW MONSTERS_INC_BI_Vista_Porcentaje_Descuento_aplicado AS
+SELECT
+	t.bi_tiempo_anio as Año,
+	t.bi_tiempo_mes as Mes,
+	(count(distinct ti.ticket_total_descuento_aplicado) * 100) / (count (distinct v.bi_hechos_venta_id)) as Porcentaje
+FROM MONSTERS_INC.BI_Hechos_Venta v
+	join MONSTERS_INC.BI_Tiempo t on t.bi_tiempo_id = v.bi_tiempo_id
+	join MONSTERS_INC.bi_Ticket ti on ti.ticket_id = v.bi_ticket_id
+WHERE ti.ticket_total_descuento_aplicado is not null
+GROUP BY
+	t.bi_tiempo_anio,
+	t.bi_tiempo_mes
+GO
+
+-----------------------------------------------------------------------------  6
+
+CREATE VIEW MONSTERS_INC_Vista_Top_3_Categorias_Descuento AS
+SELECT top 3
+	t.bi_tiempo_anio as Anio,
+    t.bi_tiempo_cuatrimestre as Cuatrimestre,
+    pc.producto_categoria_detalle as Categoria,
+	sum(ti.ticket_total_descuento_aplicado) as SumatoriaDescuentosAplicados
+FROM MONSTERS_INC.BI_Hechos_Venta v
+	join MONSTERS_INC.BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
+	join MONSTERS_INC.BI_Ticket ti on v.bi_ticket_id = ti.bi_ticket_id
+	join MONSTERS_INC.Producto p on ti.id_producto = p.id_producto
+	join MONSTERS_INC.BI_Producto_categoria pc on p.id_producto_categoria = pc.id_producto_categoria
+WHERE ti.ticket_total_descuento_aplicado IS NOT NULL
+GROUP BY
+    t.bi_tiempo_anio,
+	t.bi_tiempo_cuatrimestre,
+	pc.producto_categoria_detalle
+ORDER BY
+	sum(ti.ticket_total_descuento_aplicado)
+GO
