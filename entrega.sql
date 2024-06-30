@@ -888,7 +888,7 @@ AS
 BEGIN
     INSERT INTO [MONSTERS_INC].Descuento_Medio_Pago 
     (desc_descripcion, desc_medio_pago, desc_fecha_inicio, desc_fecha_fin, desc_porcentaje, desc_tope) 
-        SELECT DESCUENTO_DESCRIPCION AS desc_descripcion, (
+        SELECT DISTINCT DESCUENTO_DESCRIPCION AS desc_descripcion, (
             SELECT medio_pago_id 
             FROM [MONSTERS_INC].Medio_Pago
             WHERE PAGO_MEDIO_PAGO = medio_pago_nombre AND PAGO_TIPO_MEDIO_PAGO = medio_pago_tipo) AS desc_medio_pago, 
