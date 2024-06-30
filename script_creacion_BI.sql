@@ -6,7 +6,7 @@
 -- TP CUATRIMESTRAL GDD 2024 1C
 
 -- Ciclo lectivo: 2024
--- Descripcion: Migracion
+-- Descripcion: Migracion a modelo BI
 ------------------------------------------------------------------------
 
 */
@@ -71,6 +71,8 @@ IF OBJECT_ID('MONSTERS_INC.BI_Empleado', 'U') IS NOT NULL DROP TABLE MONSTERS_IN
 IF OBJECT_ID('MONSTERS_INC.BI_Ticket', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Ticket;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Envio', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Envio;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Cuota', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Cuota;
+
+PRINT '--- TABLAS BI DROPEADAS CORRECTAMENTE ---';
 
 ------------------------------------------------------------------------
 
@@ -819,18 +821,18 @@ GO
 
 CREATE VIEW [MONSTERS_INC].BI_Vista_Ticket_Promedio_Mensual AS
 SELECT
-    sum(v.cantidad_productos*v.importe_unitario)/v.cantidad_productos AS PromedioMes,
+    sum(v.cantidad_productos*v.importe_unitario) / count(distinct v.bi_ticket_id) AS PromedioMes,
+    count(distinct v.bi_ticket_id) as aux,
     u.localidad_desc,
     t.bi_tiempo_anio AS Año,
     t.bi_tiempo_mes AS Mes
-FROM MONSTERS_INC.BI_Hechos_Venta v
-	JOIN MONSTERS_INC.BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
-	JOIN MONSTERS_INC.BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+	JOIN [MONSTERS_INC].BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
+	JOIN [MONSTERS_INC].BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
 GROUP BY
     t.bi_tiempo_mes,
     t.bi_tiempo_anio,
-    u.localidad_desc,
-    v.cantidad_productos
+    u.localidad_desc
 GO
 
 -----------------------------------------------------------------------------  2
@@ -841,17 +843,17 @@ GO
 
 CREATE VIEW [MONSTERS_INC].BI_Vista_Cantidad_Unidades_Promedio AS
 SELECT
-	sum(v.cantidad_productos*v.importe_unitario)/count(v.bi_ticket_id) as Promedio,
+	sum(v.cantidad_productos) / count(distinct v.bi_ticket_id) as Promedio,
 	--para cada turno
 	tu.turno_desc as Turno,
     --para cada cuatrimestre
 	t.bi_tiempo_cuatrimestre as Cuatrimestre,
     --para cada anio
 	t.bi_tiempo_anio as Año
-FROM MONSTERS_INC.BI_Hechos_Venta v
-	inner join MONSTERS_INC.BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
-	inner join MONSTERS_INC.BI_Turno tu on tu.bi_turno_id = v.bi_turno_id
-	inner join MONSTERS_INC.BI_Ticket i on i.bi_ticket_id = v.bi_ticket_id
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+	inner join [MONSTERS_INC].BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
+	inner join [MONSTERS_INC].BI_Turno tu on tu.bi_turno_id = v.bi_turno_id
+	inner join [MONSTERS_INC].BI_Ticket i on i.bi_ticket_id = v.bi_ticket_id
 GROUP BY
 	--3,
 	tu.turno_desc,
@@ -870,17 +872,24 @@ SELECT
     r.rango_etario_desc as RangoEtario,
     c.caja_desc as TipoCaja,
     t.bi_tiempo_cuatrimestre as Cuatrimestre,
+    t.bi_tiempo_anio as Anio,
     (
-        SUM(v.cantidad_productos*v.importe_unitario)/
-        (SELECT SUM(v2.cantidad_productos*v2.importe_unitario)
-		FROM  MONSTERS_INC.BI_Hechos_Venta v2
-		JOIN  MONSTERS_INC.BI_Tiempo t2 ON v2.bi_tiempo_id = t2.bi_tiempo_id
-		WHERE t2.bi_tiempo_anio = t.bi_tiempo_anio) * 100 ) as Porcentaje
+        count(distinct v.bi_ticket_id) * 100 /
+        (
+            SELECT 
+                count(distinct v2.bi_ticket_id)
+		    FROM  [MONSTERS_INC].BI_Hechos_Venta v2
+            	INNER JOIN  [MONSTERS_INC].BI_Tiempo t2 ON v2.bi_tiempo_id = t2.bi_tiempo_id
+                INNER JOIN [MONSTERS_INC].BI_Caja_Tipo c2 ON c2.bi_caja_tipo_id = v2.bi_caja_tipo_id
+	            INNER JOIN [MONSTERS_INC].BI_Rango_Etario r2 on r2.bi_rango_etario_id = v2.bi_rango_etario_id
+                WHERE c2.caja_desc = c.caja_desc and r.rango_etario_desc = r2.rango_etario_desc and t2.bi_tiempo_anio = t.bi_tiempo_anio
+        )
+    ) as Porcentaje
 FROM 
-    MONSTERS_INC.BI_Hechos_Venta v
-	JOIN MONSTERS_INC.BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
-	JOIN MONSTERS_INC.BI_Caja_Tipo c ON c.bi_caja_tipo_id = v.bi_caja_tipo_id
-	JOIN MONSTERS_INC.BI_Rango_Etario r on r.bi_rango_etario_id = v.bi_rango_etario_id
+    [MONSTERS_INC].BI_Hechos_Venta v
+	JOIN [MONSTERS_INC].BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
+	JOIN [MONSTERS_INC].BI_Caja_Tipo c ON c.bi_caja_tipo_id = v.bi_caja_tipo_id
+	JOIN [MONSTERS_INC].BI_Rango_Etario r on r.bi_rango_etario_id = v.bi_rango_etario_id
 GROUP BY
     r.rango_etario_desc,
     c.caja_desc,	
@@ -902,10 +911,10 @@ SELECT
     t.bi_tiempo_anio as Año,
 	tu.turno_desc as Turno,
     sum(v.cantidad_productos) as CantidadProductos
-FROM MONSTERS_INC.BI_Hechos_Venta v
-    JOIN MONSTERS_INC.BI_Tiempo t ON t.bi_tiempo_id = v.bi_tiempo_id
-	JOIN MONSTERS_INC.BI_Turno tu ON tu.bi_turno_id = v.bi_turno_id
-    JOIN MONSTERS_INC.BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = v.bi_tiempo_id
+	JOIN [MONSTERS_INC].BI_Turno tu ON tu.bi_turno_id = v.bi_turno_id
+    JOIN [MONSTERS_INC].BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
 GROUP BY
     tu.turno_desc,
 	u.localidad_desc,
@@ -924,8 +933,8 @@ SELECT
 	t.bi_tiempo_anio as Año,
 	t.bi_tiempo_mes as Mes,
 	(sum(distinct v.descuento_total)) * 100 / sum(v.cantidad_productos * v.importe_unitario) as Porcentaje
-FROM MONSTERS_INC.BI_Hechos_Venta v
-	join MONSTERS_INC.BI_Tiempo t on t.bi_tiempo_id = v.bi_tiempo_id
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+	join [MONSTERS_INC].BI_Tiempo t on t.bi_tiempo_id = v.bi_tiempo_id
 GROUP BY
 	t.bi_tiempo_anio,
 	t.bi_tiempo_mes
@@ -943,8 +952,8 @@ SELECT
     t.bi_tiempo_cuatrimestre as Cuatrimestre,
     v.categoria_desc as Categoria,
 	sum(distinct v.descuento_promo_prod) as SumatoriaDescuentosAplicados
-FROM MONSTERS_INC.BI_Hechos_Venta v
-	join MONSTERS_INC.BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+	join [MONSTERS_INC].BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
 GROUP BY
     t.bi_tiempo_anio,
 	t.bi_tiempo_cuatrimestre,
@@ -952,8 +961,8 @@ GROUP BY
 HAVING sum(distinct v.descuento_promo_prod) IN (
     SELECT TOP 3 
         sum(distinct vs.descuento_promo_prod)
-    FROM MONSTERS_INC.BI_Hechos_Venta vs
-        INNER JOIN MONSTERS_INC.BI_Tiempo ts ON vs.bi_tiempo_id = ts.bi_tiempo_id
+    FROM [MONSTERS_INC].BI_Hechos_Venta vs
+        INNER JOIN [MONSTERS_INC].BI_Tiempo ts ON vs.bi_tiempo_id = ts.bi_tiempo_id
     WHERE ts.bi_tiempo_anio = t.bi_tiempo_anio AND ts.bi_tiempo_cuatrimestre = t.bi_tiempo_cuatrimestre
     GROUP BY vs.categoria_desc
     ORDER BY 1 DESC
@@ -975,9 +984,9 @@ SELECT
 	(SUM(CASE WHEN CAST(e.envi_fecha_entrega AS date) <= CAST(e.envi_fecha_programada AS date) THEN 1 ELSE 0 END) 
     / 
     COUNT(e.bi_hechos_envio_id))*100 AS Porcentaje
-FROM MONSTERS_INC.BI_Hechos_Envio e
-    JOIN MONSTERS_INC.BI_Tiempo t ON t.bi_tiempo_id = e.bi_tiempo_id
-    JOIN MONSTERS_INC.BI_Sucursal s ON e.bi_sucursal_id = s.bi_sucursal_id
+FROM [MONSTERS_INC].BI_Hechos_Envio e
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = e.bi_tiempo_id
+    JOIN [MONSTERS_INC].BI_Sucursal s ON e.bi_sucursal_id = s.bi_sucursal_id
 GROUP BY s.bi_sucursal_id, t.bi_tiempo_anio, t.bi_tiempo_mes;
 GO
 
@@ -993,9 +1002,9 @@ SELECT
     t.bi_tiempo_cuatrimestre as Cuatrimeste,
     t.bi_tiempo_anio as Año,
     count(bi_hechos_envio_id) as Envios
-FROM MONSTERS_INC.BI_Hechos_Envio e
-    JOIN MONSTERS_INC.BI_Tiempo t ON t.bi_tiempo_id = e.bi_tiempo_id 
-	JOIN MONSTERS_INC.BI_Rango_Etario r ON r.bi_rango_etario_id = e.bi_rango_etario_id
+FROM [MONSTERS_INC].BI_Hechos_Envio e
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = e.bi_tiempo_id 
+	JOIN [MONSTERS_INC].BI_Rango_Etario r ON r.bi_rango_etario_id = e.bi_rango_etario_id
 GROUP BY
     r.rango_etario_desc,
     t.bi_tiempo_cuatrimestre,
@@ -1011,8 +1020,8 @@ GO
 CREATE VIEW [MONSTERS_INC].BI_Vista_Top_5_Localidades_Mayor_Costo_Envio AS
 SELECT TOP 5
     u.localidad_desc as Localidad
-FROM MONSTERS_INC.BI_Hechos_Envio e
-	JOIN MONSTERS_INC.BI_Ubicacion u on u.bi_ubicacion_id = e.bi_ubicacion_id
+FROM [MONSTERS_INC].BI_Hechos_Envio e
+	JOIN [MONSTERS_INC].BI_Ubicacion u on u.bi_ubicacion_id = e.bi_ubicacion_id
 GROUP BY
 	u.localidad_desc
 ORDER BY
@@ -1031,9 +1040,9 @@ SELECT top 3
     c.bi_medio_pago_id as MedioDePago,
     t.bi_tiempo_anio as Anio,
     sum(c.importe_cuota) as ImporteCuota
-FROM MONSTERS_INC.BI_Hechos_Cuota c
-    JOIN MONSTERS_INC.BI_Tiempo t ON t.bi_tiempo_id = c.bi_tiempo_id
-	join MONSTERS_INC.BI_Sucursal s on c.bi_sucursal_id = s.bi_sucursal_id
+FROM [MONSTERS_INC].BI_Hechos_Cuota c
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = c.bi_tiempo_id
+	join [MONSTERS_INC].BI_Sucursal s on c.bi_sucursal_id = s.bi_sucursal_id
 WHERE c.cantidad_cuotas IS NOT NULL -- Puede ser null, cuidado
 GROUP BY
     s.bi_sucursal_id,
@@ -1053,7 +1062,7 @@ CREATE VIEW [MONSTERS_INC].BI_Vista_Promedio_Importe_Cuota_RangoEtario AS
 SELECT
     re.rango_etario_desc AS RangoEtario,
     AVG(ISNULL(c.importe_cuota,0)) AS PromedioImporteCuota
-FROM MONSTERS_INC.BI_Hechos_Cuota c
+FROM [MONSTERS_INC].BI_Hechos_Cuota c
     INNER JOIN [MONSTERS_INC].BI_Rango_Etario re ON re.bi_rango_etario_id = c.bi_rango_etario_id
 WHERE c.cantidad_cuotas IS NOT NULL -- Puede ser null, cuidado
 GROUP BY
@@ -1072,15 +1081,17 @@ SELECT
     t.bi_tiempo_anio as Año,
     t.bi_tiempo_cuatrimestre as Cuatrimestre,
     (sum(v.descuento_total - v.descuento_promo_prod) / (sum (v.cantidad_productos * v.importe_unitario)))*100 as Porcentaje
-FROM MONSTERS_INC.BI_Hechos_Venta v
-    JOIN MONSTERS_INC.BI_Tiempo t ON t.bi_tiempo_id = v.bi_tiempo_id
-	join MONSTERS_INC.BI_Medio_Pago m on v.bi_medio_pago_id = m.bi_medio_pago_id
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = v.bi_tiempo_id
+	join [MONSTERS_INC].BI_Medio_Pago m on v.bi_medio_pago_id = m.bi_medio_pago_id
 GROUP BY
     m.medio_pago_nombre,
     t.bi_tiempo_anio,
     t.bi_tiempo_cuatrimestre
 GO
 -----------------------------------------------------------------------------  
+
+PRINT '--- COMENZANDO LA MIGRACION DE DATOS BI ---'
 
 /* EJECUTAR PROCEDURES MIGRACION BI */
 
@@ -1099,9 +1110,13 @@ EXEC [MONSTERS_INC].Migrar_BI_Hechos_Cuota
 
 PRINT '--- MIGRACION REALIZADA ---';
 
+-- Referencia a vistas con fines de prueba
+
+/*
+
 select * from [MONSTERS_INC].BI_Vista_Ticket_Promedio_Mensual
-select * from [MONSTERS_INC].BI_Vista_Porcentaje_Anual_Cuatrimestre
 select * from [MONSTERS_INC].BI_Vista_Cantidad_Unidades_Promedio
+select * from [MONSTERS_INC].BI_Vista_Porcentaje_Anual_Cuatrimestre
 select * from [MONSTERS_INC].BI_Vista_Cantidad_Ventas_Por_Turno
 select * from [MONSTERS_INC].BI_Vista_Porcentaje_Descuento_aplicado
 select * from [MONSTERS_INC].BI_Vista_Top_3_Categorias_Descuento
@@ -1114,39 +1129,4 @@ select * from [MONSTERS_INC].BI_Vista_Top_3_Sucursales_Importe_Cuotas
 select * from [MONSTERS_INC].BI_Vista_Promedio_Importe_Cuota_RangoEtario
 select * from [MONSTERS_INC].BI_Vista_Porcentaje_Descuento_Por_Medio_Pago
 
-/*
-
-select * from [MONSTERS_INC].BI_Hechos_Venta
-
-select * from [MONSTERS_INC].Ticket t
-    INNER JOIN [MONSTERS_INC].Pago p on p.pago_ticket = t.tick_id
-    INNER JOIN [MONSTERS_INC].[Medio_Pago] m on m.medio_pago_id = p.pago_medio_pago
-
-SELECT
-    m.medio_pago_tipo,
-    m.medio_pago_nombre,
-    dA.desc_apli_descuento_aplicado
-FROM [MONSTERS_INC].Medio_Pago m
-    LEFT JOIN [MONSTERS_INC].Descuento_Medio_Pago d on m.medio_pago_id = d.desc_medio_pago 
-    INNER JOIN [MONSTERS_INC].Descuento_Medio_Pago_Aplicado dA on d.desc_id = dA.desc_apli_cod_descuento_mp
-
-        SELECT * 
-        FROM [MONSTERS_INC].Ticket t
-        INNER JOIN [MONSTERS_INC].Item_Ticket it on it.item_tick_ticket = t.tick_id
-        LEFT JOIN [MONSTERS_INC].Pago p ON p.pago_ticket = t.tick_id
-
-SELECT * FROM [MONSTERS_INC].Descuento_Medio_Pago_Aplicado
-desc_apli_descuento_aplicado
-select * from [MONSTERS_INC].BI_Medio_Pago
-
-select * from [MONSTERS_INC].Promocion p
-    inner join [MONSTERS_INC].Regla r on r.reg_id = p.prom_regla
-
-SELECT * 
-    FROM [MONSTERS_INC].Ticket t
-        INNER JOIN [MONSTERS_INC].Item_Ticket it on it.item_tick_ticket = t.tick_id
-        LEFT JOIN [MONSTERS_INC].Pago p ON p.pago_ticket = t.tick_id
-
 */
-
-

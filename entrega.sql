@@ -2,7 +2,7 @@
 
 -- Equipo: MONSTERS INC
 -- Fecha de entrega: 30.05.2024
--- TP ANUAL GDD 2024 1C
+-- TP CUATRIMESTRAL GDD 2024 1C
 
 -- Ciclo lectivo: 2024
 -- Descripcion: Migracion de Tabla Maestra - Creacion Inicial
@@ -44,6 +44,28 @@ EXECUTE sp_executesql @DropProcedures;
 PRINT '--- PROCEDURES DROPEADOS CORRECTAMENTE ---';
 
 GO
+
+/* DROPS VISTAS */
+DECLARE @DropViews NVARCHAR(max) = ''
+
+SELECT @DropViews += 'DROP VIEW ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ';'
+FROM sys.views
+WHERE name LIKE '%' + 'BI_' + '%';
+
+EXECUTE sp_executesql @DropViews;
+
+PRINT '--- VISTAS DROPEADAS CORRECTAMENTE ---';
+
+GO
+
+/* DROPS FUNCTIONS */
+DECLARE @DropFunctions NVARCHAR(MAX) = '';
+
+SELECT @DropFunctions += 'DROP FUNCTION ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ';'
+FROM sys.objects
+WHERE type IN ('FN', 'IF', 'TF') AND name LIKE '%' + 'BI_' + '%';
+
+EXEC sp_executesql @DropFunctions;
 
 PRINT '--- FUNCTIONS DROPEADOS CORRECTAMENTE ---';
 
@@ -905,8 +927,6 @@ GO
 
 /* Ticket */
 
--- Para traernos el empleado, use solamente nombre, apellido y dni... Se puede hacer con mas columnas de ser necesario
-
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Ticket
 AS
 BEGIN
@@ -964,9 +984,6 @@ GO
 
 /* Entrega */
 
--- Esta tabla se modelo por si a futuro se agregaga un comentario de entrega
--- No le pongo DISTINCT porque caso contrario perderia ese sentido
-
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Entrega
 AS
 BEGIN
@@ -1015,7 +1032,7 @@ END
 GO
 
 /* Item Ticket */
--- 37k
+
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Item_Ticket
 AS
 BEGIN
