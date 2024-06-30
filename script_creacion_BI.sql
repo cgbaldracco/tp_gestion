@@ -795,11 +795,8 @@ BEGIN
             from [MONSTERS_INC].Sucursal sc
             where sc.sucu_id = c.caja_sucursal
         ),
-        --[MONSTERS_INC].BI_Obtener_Id_Sucursal(c.caja_sucursal),
-        --(SELECT bi_sucursal_id FROM BI_Sucursal where bi_sucursal_id = c.caja_sucursal),
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(e.envio_cliente),
         [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(p.pago_medio_pago),
-        --(SELECT bi_medio_pago_id FROM BI_Medio_Pago where bi_medio_pago_id = p.pago_medio_pago),
         d.deta_tarjeta_cuotas,
         t.tick_total/d.deta_tarjeta_cuotas
     FROM [MONSTERS_INC].Ticket t
@@ -890,7 +887,6 @@ GROUP BY
     t.bi_tiempo_cuatrimestre,
     t.bi_tiempo_anio
 GO
-
 
 -----------------------------------------------------------------------------  4
 
@@ -1006,8 +1002,6 @@ GROUP BY
     t.bi_tiempo_anio;
 GO
 
-
-
 -----------------------------------------------------------------------------  9
 
 IF Object_id('MONSTERS_INC.BI_Vista_Top_5_Localidades_Mayor_Costo_Envio') IS NOT NULL
@@ -1024,7 +1018,6 @@ GROUP BY
 ORDER BY
     sum(e.envi_costo) desc
 GO
-
 
 -----------------------------------------------------------------------------  10
 
@@ -1062,6 +1055,7 @@ SELECT
     AVG(ISNULL(c.importe_cuota,0)) AS PromedioImporteCuota
 FROM MONSTERS_INC.BI_Hechos_Cuota c
     INNER JOIN [MONSTERS_INC].BI_Rango_Etario re ON re.bi_rango_etario_id = c.bi_rango_etario_id
+WHERE c.cantidad_cuotas IS NOT NULL -- Puede ser null, cuidado
 GROUP BY
     re.rango_etario_desc
 GO
@@ -1154,3 +1148,5 @@ SELECT *
         LEFT JOIN [MONSTERS_INC].Pago p ON p.pago_ticket = t.tick_id
 
 */
+
+
