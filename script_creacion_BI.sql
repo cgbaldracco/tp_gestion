@@ -67,7 +67,6 @@ IF OBJECT_ID('MONSTERS_INC.BI_Categoria', 'U') IS NOT NULL DROP TABLE MONSTERS_I
 IF OBJECT_ID('MONSTERS_INC.BI_Item_Ticket', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Item_Ticket;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Venta', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Venta;
 IF OBJECT_ID('MONSTERS_INC.BI_Caja_Tipo', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Caja_Tipo;
-IF OBJECT_ID('MONSTERS_INC.BI_Empleado', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Empleado;
 IF OBJECT_ID('MONSTERS_INC.BI_Ticket', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Ticket;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Envio', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Envio;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Cuota', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Cuota;
@@ -143,14 +142,6 @@ CREATE TABLE [MONSTERS_INC].[BI_Caja_Tipo]
     [caja_nro] nvarchar(18)
 );
 
-/* BI_Empleado */
-CREATE TABLE [MONSTERS_INC].[BI_Empleado]
-(
-    [bi_empleado_id] numeric(18) IDENTITY NOT NULL,
-    [empl_desc] nvarchar(255) NOT NULL,
-    [empl_dni] nvarchar(255) NOT NULL
-);
-
 /* BI_Ticket */
 CREATE TABLE [MONSTERS_INC].[BI_Ticket]
 (
@@ -167,12 +158,11 @@ GO
 CREATE TABLE [MONSTERS_INC].[BI_Hechos_Venta]
 (
     [bi_hechos_venta_id] numeric(18) IDENTITY NOT NULL,
-    [bi_ubicacion_id] numeric(18) NOT NULL,  -- localidad (ubicacion) + anio || mes (tiempo)
+    [bi_ubicacion_id] numeric(18) NOT NULL,
     [bi_tiempo_id] numeric(18) NOT NULL,
     [bi_turno_id] numeric(18) NOT NULL,
     [bi_caja_tipo_id] numeric(18) NOT NULL,
     [bi_rango_etario_id] numeric(18) NOT NULL,
-    [bi_empleado_id] numeric(18) NOT NULL,
     [bi_ticket_id] numeric(18) NOT NULL,
     [bi_medio_pago_id] numeric(18) NOT NULL,
     [importe_unitario] numeric(18) NOT NULL,
@@ -185,12 +175,12 @@ CREATE TABLE [MONSTERS_INC].[BI_Hechos_Venta]
 /* BI Hechos_Envio */
 CREATE TABLE [MONSTERS_INC].[BI_Hechos_Envio]
 (
-    [bi_hechos_envio_id] numeric(18) IDENTITY NOT NULL, 
+    [bi_hechos_envio_id] numeric(18) IDENTITY NOT NULL,
     [bi_tiempo_id] numeric(18) NOT NULL,
     [bi_sucursal_id] numeric(18),
     [bi_rango_etario_id] numeric(18) NOT NULL,
     [bi_ubicacion_id] numeric(18) NOT NULL,
-    [envi_fecha_programada] datetime NOT NULL,  
+    [envi_fecha_programada] datetime NOT NULL,
     [envi_fecha_entrega] datetime NOT NULL,
     [envi_costo] numeric(18) NOT NULL
 );
@@ -198,13 +188,13 @@ CREATE TABLE [MONSTERS_INC].[BI_Hechos_Envio]
 /* BI Hechos_Couta */
 CREATE TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
 (
-    [bi_hechos_cuota_id] numeric(18) IDENTITY NOT NULL, 
+    [bi_hechos_cuota_id] numeric(18) IDENTITY NOT NULL,
     [bi_tiempo_id] numeric(18) NOT NULL,
     [bi_sucursal_id] numeric(18) NOT NULL,
     [bi_rango_etario_id] numeric(18) NOT NULL,
     [bi_medio_pago_id] numeric(18) NOT NULL,
-    [cantidad_cuotas] numeric(18),                                                                              --puede ser null
-    [importe_cuota] decimal(18,2)                                                                                 --puede ser null
+    [cantidad_cuotas] numeric(18),
+    [importe_cuota] decimal(18,2)
 );
 
 ------------------------------------------------------------------------
@@ -235,9 +225,6 @@ ALTER TABLE [MONSTERS_INC].[BI_Categoria]
 ALTER TABLE [MONSTERS_INC].[BI_Caja_Tipo]
     ADD CONSTRAINT [PK_BI_Caja_Tipo] PRIMARY KEY CLUSTERED ([bi_caja_tipo_id] ASC)
 
-ALTER TABLE [MONSTERS_INC].[BI_Empleado]
-    ADD CONSTRAINT [PK_BI_Empleado] PRIMARY KEY CLUSTERED ([bi_empleado_id] ASC)
-
 ALTER TABLE [MONSTERS_INC].[BI_Ticket]
     ADD CONSTRAINT [PK_BI_Ticket] PRIMARY KEY CLUSTERED ([bi_ticket_id] ASC)
 
@@ -264,10 +251,6 @@ ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
     ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_caja_tipo_id] FOREIGN KEY ([bi_caja_tipo_id])
     REFERENCES [MONSTERS_INC].[BI_Caja_Tipo]([bi_caja_tipo_id]);
-
-ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_empleado_id] FOREIGN KEY ([bi_empleado_id])
-    REFERENCES [MONSTERS_INC].[BI_Empleado]([bi_empleado_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
     ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_rango_etario_id] FOREIGN KEY ([bi_rango_etario_id])
@@ -420,29 +403,6 @@ BEGIN
 
     RETURN @idCajaTipo
 END
-GO
-
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Empleado(@idEmpleado numeric(18))
-RETURNS numeric(18)
-AS
-    BEGIN
-        DECLARE @idEmpleadoBI AS numeric(18)
-        DECLARE @nombreEmpleado AS nvarchar(128), @apellidoEmpleado AS nvarchar(128), @unDni AS numeric(18)
-
-        SELECT 
-            @nombreEmpleado = em.empl_nombre,
-            @apellidoEmpleado = em.empl_apellido,
-            @unDni = em.empl_dni
-        FROM [MONSTERS_INC].Empleado em
-        WHERE em.empl_id = @idEmpleado
-
-        SELECT 
-            @idEmpleadoBI = e.bi_empleado_id
-        FROM [MONSTERS_INC].BI_Empleado e
-        WHERE e.empl_desc = @nombreEmpleado + @apellidoEmpleado AND e.empl_dni = @unDni
-
-        RETURN @idEmpleadoBI
-    END
 GO
 
 CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(@idPersona numeric(18))
@@ -663,21 +623,6 @@ BEGIN
 END
 GO
 
-
-/* BI_Empleado */
-
-CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Empleado
-AS
-BEGIN
-    INSERT INTO [MONSTERS_INC].BI_Empleado
-    (empl_desc, empl_dni)
-    SELECT DISTINCT
-        e.empl_nombre + e.empl_apellido,
-        e.empl_dni
-    FROM [MONSTERS_INC].Empleado e
-END
-GO 
-
 /* BI_Ticket */
 
 CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Ticket
@@ -712,8 +657,8 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Hechos_Venta
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].BI_Hechos_Venta
-    (bi_ubicacion_id, bi_tiempo_id , bi_turno_id, bi_caja_tipo_id, bi_rango_etario_id, 
-    bi_empleado_id, bi_ticket_id, bi_medio_pago_id, importe_unitario, cantidad_productos, 
+    (bi_ubicacion_id, bi_tiempo_id , bi_turno_id, bi_caja_tipo_id, bi_rango_etario_id,
+     bi_ticket_id, bi_medio_pago_id, importe_unitario, cantidad_productos,
     descuento_total, descuento_promo_prod, categoria_desc)
     SELECT
         (SELECT TOP 1
@@ -728,7 +673,6 @@ BEGIN
         [MONSTERS_INC].BI_Obtener_Id_Turno(t.tick_fecha_hora),
         [MONSTERS_INC].BI_Obtener_Id_Caja_Tipo(t.tick_caja),
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(t.tick_empleado),
-        [MONSTERS_INC].BI_Obtener_Id_Empleado(t.tick_empleado),
         [MONSTERS_INC].BI_Obtener_Id_Ticket(t.tick_nro),
         [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(p.pago_medio_pago),
         it.item_tick_total, 
@@ -1101,7 +1045,6 @@ EXEC [MONSTERS_INC].Migrar_BI_Sucursal
 EXEC [MONSTERS_INC].Migrar_BI_Rango_Etario
 EXEC [MONSTERS_INC].Migrar_BI_Turno
 EXEC [MONSTERS_INC].Migrar_BI_Caja_Tipo
-EXEC [MONSTERS_INC].Migrar_BI_Empleado
 EXEC [MONSTERS_INC].Migrar_BI_Ticket
 EXEC [MONSTERS_INC].Migrar_BI_Medio_Pago
 EXEC [MONSTERS_INC].Migrar_BI_Hechos_Venta
