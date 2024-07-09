@@ -67,7 +67,6 @@ IF OBJECT_ID('MONSTERS_INC.BI_Categoria', 'U') IS NOT NULL DROP TABLE MONSTERS_I
 IF OBJECT_ID('MONSTERS_INC.BI_Item_Ticket', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Item_Ticket;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Venta', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Venta;
 IF OBJECT_ID('MONSTERS_INC.BI_Caja_Tipo', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Caja_Tipo;
-IF OBJECT_ID('MONSTERS_INC.BI_Ticket', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Ticket;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Envio', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Envio;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Cuota', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Cuota;
 
@@ -142,13 +141,6 @@ CREATE TABLE [MONSTERS_INC].[BI_Caja_Tipo]
     [caja_nro] nvarchar(18)
 );
 
-/* BI_Ticket */
-CREATE TABLE [MONSTERS_INC].[BI_Ticket]
-(
-    [bi_ticket_id] numeric(18) IDENTITY NOT NULL,
-    [ticket_nro] decimal(18) NOT NULL
-);
-
 ------------------------------------------------------------------------
 
 PRINT '--- CREACION TABLAS DE HECHOS  ---';
@@ -158,32 +150,47 @@ GO
 CREATE TABLE [MONSTERS_INC].[BI_Hechos_Venta]
 (
     [bi_hechos_venta_id] numeric(18) IDENTITY NOT NULL,
-    [bi_ubicacion_id] numeric(18) NOT NULL,
-    [bi_tiempo_id] numeric(18) NOT NULL,
-    [bi_turno_id] numeric(18) NOT NULL,
-    [bi_caja_tipo_id] numeric(18) NOT NULL,
-    [bi_rango_etario_id] numeric(18) NOT NULL,
-    [bi_ticket_id] numeric(18) NOT NULL,
-    [bi_medio_pago_id] numeric(18) NOT NULL,
-    [importe_unitario] numeric(18) NOT NULL,
-    [cantidad_productos] numeric(18) NOT NULL,
-    [descuento_total] numeric(18) NOT NULL,
-    [descuento_promo_prod] numeric(18) NOT NULL,
-    [categoria_desc] nvarchar(255)
+    [bi_venta_tiempo_id] numeric(18) NOT NULL,
+    [bi_venta_turno_id] numeric(18) NOT NULL,
+    [bi_venta_caja_tipo_id] numeric(18) NOT NULL,
+    [bi_venta_rango_etario_id] numeric(18) NOT NULL,
+    [bi_venta_medio_pago_id] numeric(18) NOT NULL,
+    [bi_venta_ubicacion_id] numeric(18) NOT NULL,
+    [bi_venta_sucursal_id] numeric(18) NOT NULL,
+    [venta_prom_total] decimal(18,2),
+    [venta_total_monto] decimal(18,2),
+    [venta_cant_prom_productos] numeric(18),
+    [venta_cantidad] numeric(18),
+    [venta_total_importe_cuotas] decimal(18,2),
+    [venta_promedio_cuota] decimal(18,2)
 );
 
 /* BI Hechos_Envio */
 CREATE TABLE [MONSTERS_INC].[BI_Hechos_Envio]
 (
     [bi_hechos_envio_id] numeric(18) IDENTITY NOT NULL,
-    [bi_tiempo_id] numeric(18) NOT NULL,
-    [bi_sucursal_id] numeric(18),
-    [bi_rango_etario_id] numeric(18) NOT NULL,
-    [bi_ubicacion_id] numeric(18) NOT NULL,
-    [envi_fecha_programada] datetime NOT NULL,
-    [envi_fecha_entrega] datetime NOT NULL,
-    [envi_costo] numeric(18) NOT NULL
+    [bi_envio_tiempo_id] numeric(18) NOT NULL,
+    [bi_envio_rango_etario_id] numeric(18) NOT NULL,
+    [bi_envio_ubicacion_id] numeric(18) NOT NULL,
+    [bi_envio_sucursal_id] numeric(18),
+    [bi_envio_cantidad] numeric(18) NOT NULL,
+    [bi_envio_max_costo] decimal(18,2) NOT NULL,
+    [bi_envio_porc_cumpl] decimal(18,2) NOT NULL
 );
+
+
+/* BI Hechos_Promocion */
+CREATE TABLE [MONSTERS_INC].[BI_Hechos_Promocion]
+(
+    [bi_hechos_promo_id] numeric(18) IDENTITY NOT NULL,
+    [bi_tiempo_id] numeric(18) NOT NULL,
+    [bi_sucursal_id] numeric(18) NOT NULL,
+    [bi_rango_etario_id] numeric(18) NOT NULL,
+    [bi_medio_pago_id] numeric(18) NOT NULL,
+    [cantidad_cuotas] numeric(18),
+    [importe_cuota] decimal(18,2)
+);
+
 
 /* BI Hechos_Couta */
 CREATE TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
@@ -225,9 +232,6 @@ ALTER TABLE [MONSTERS_INC].[BI_Categoria]
 ALTER TABLE [MONSTERS_INC].[BI_Caja_Tipo]
     ADD CONSTRAINT [PK_BI_Caja_Tipo] PRIMARY KEY CLUSTERED ([bi_caja_tipo_id] ASC)
 
-ALTER TABLE [MONSTERS_INC].[BI_Ticket]
-    ADD CONSTRAINT [PK_BI_Ticket] PRIMARY KEY CLUSTERED ([bi_ticket_id] ASC)
-
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Envio]
     ADD CONSTRAINT [PK_BI_Hechos_Envio] PRIMARY KEY CLUSTERED ([bi_hechos_envio_id] ASC) 
 
@@ -237,49 +241,49 @@ ALTER TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
 /* CONSTRAINT GENERATION - FKs*/
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_ubicacion_id] FOREIGN KEY ([bi_ubicacion_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_venta_ubicacion_id] FOREIGN KEY ([bi_venta_ubicacion_id])
     REFERENCES [MONSTERS_INC].[BI_Ubicacion]([bi_ubicacion_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_tiempo_id] FOREIGN KEY ([bi_tiempo_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_venta_tiempo_id] FOREIGN KEY ([bi_venta_tiempo_id])
     REFERENCES [MONSTERS_INC].[BI_Tiempo]([bi_tiempo_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_turno_id] FOREIGN KEY ([bi_turno_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_venta_turno_id] FOREIGN KEY ([bi_venta_turno_id])
     REFERENCES [MONSTERS_INC].[BI_Turno]([bi_turno_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_caja_tipo_id] FOREIGN KEY ([bi_caja_tipo_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_venta_caja_tipo_id] FOREIGN KEY ([bi_venta_caja_tipo_id])
     REFERENCES [MONSTERS_INC].[BI_Caja_Tipo]([bi_caja_tipo_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_rango_etario_id] FOREIGN KEY ([bi_rango_etario_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_venta_rango_etario_id] FOREIGN KEY ([bi_venta_rango_etario_id])
     REFERENCES [MONSTERS_INC].[BI_Rango_Etario]([bi_rango_etario_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_ticket_id] FOREIGN KEY ([bi_ticket_id])
-    REFERENCES [MONSTERS_INC].[BI_Ticket]([bi_ticket_id]);
+    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_venta_medio_pago_id] FOREIGN KEY ([bi_venta_medio_pago_id])
+    REFERENCES [MONSTERS_INC].[BI_Medio_Pago]([bi_medio_pago_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Venta]
-    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_medio_pago_id] FOREIGN KEY ([bi_medio_pago_id])
-    REFERENCES [MONSTERS_INC].[BI_Medio_Pago]([bi_medio_pago_id]);
+    ADD CONSTRAINT [FK_BI_Hechos_Venta_bi_venta_sucursal_id] FOREIGN KEY ([bi_venta_sucursal_id])
+    REFERENCES [MONSTERS_INC].[BI_Sucursal]([bi_sucursal_id]);
 
 --
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Envio]
-    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_tiempo_id] FOREIGN KEY ([bi_tiempo_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_envio_tiempo_id] FOREIGN KEY ([bi_envio_tiempo_id])
     REFERENCES [MONSTERS_INC].[BI_Tiempo]([bi_tiempo_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Envio]
-    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_sucursal_id] FOREIGN KEY ([bi_sucursal_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_envio_sucursal_id] FOREIGN KEY ([bi_envio_sucursal_id])
     REFERENCES [MONSTERS_INC].[BI_Sucursal]([bi_sucursal_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Envio]
-    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_rango_etario_id] FOREIGN KEY ([bi_rango_etario_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_envio_rango_etario_id] FOREIGN KEY ([bi_envio_rango_etario_id])
     REFERENCES [MONSTERS_INC].[BI_Rango_Etario]([bi_rango_etario_id]);
 
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Envio]
-    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_ubicacion_id] FOREIGN KEY ([bi_ubicacion_id])
+    ADD CONSTRAINT [FK_BI_Hechos_Envio_bi_envio_ubicacion_id] FOREIGN KEY ([bi_envio_ubicacion_id])
     REFERENCES [MONSTERS_INC].[BI_Ubicacion]([bi_ubicacion_id]);
 
 --
@@ -447,21 +451,6 @@ AS
     END
 GO
 
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Ticket(@unNroTicket decimal(18))
-RETURNS decimal(18)
-AS
-    BEGIN
-        DECLARE @idTicketBi AS numeric(18)
-
-        SELECT TOP 1
-            @idTicketBi = t.bi_ticket_id
-        FROM [MONSTERS_INC].BI_Ticket t
-        WHERE t.ticket_nro = @unNroTicket
-
-        RETURN @idTicketBi
-    END
-GO
-
 CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(@unMedioPagoId numeric(18))
 RETURNS numeric(18)
 AS
@@ -623,19 +612,6 @@ BEGIN
 END
 GO
 
-/* BI_Ticket */
-
-CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Ticket
-AS
-BEGIN
-    INSERT INTO [MONSTERS_INC].BI_Ticket
-    (ticket_nro)
-    SELECT DISTINCT
-        t.tick_nro
-    FROM [MONSTERS_INC].Ticket t
-END
-GO
-
 /* BI_Medio_Pago */
 
 CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Medio_Pago
@@ -647,7 +623,6 @@ BEGIN
         m.medio_pago_tipo,
         m.medio_pago_nombre
     FROM [MONSTERS_INC].Medio_Pago m
-        LEFT JOIN [MONSTERS_INC].Descuento_Medio_Pago d on m.medio_pago_id = d.desc_medio_pago
 END
 GO
 
@@ -657,40 +632,51 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Hechos_Venta
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].BI_Hechos_Venta
-    (bi_ubicacion_id, bi_tiempo_id , bi_turno_id, bi_caja_tipo_id, bi_rango_etario_id,
-     bi_ticket_id, bi_medio_pago_id, importe_unitario, cantidad_productos,
-    descuento_total, descuento_promo_prod, categoria_desc)
-    SELECT
-        (SELECT TOP 1
-                [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre)
-            FROM [MONSTERS_INC].Caja c
-            INNER JOIN [MONSTERS_INC].Sucursal s ON s.sucu_id = c.caja_sucursal
-            INNER JOIN [MONSTERS_INC].Localidad l ON l.loca_id  = s.sucu_localidad 
-            INNER JOIN [MONSTERS_INC].Provincia p ON p.prov_id = l.loca_provincia
-            WHERE c.caja_id = t.tick_caja
-        ),
+    (bi_venta_tiempo_id, bi_venta_turno_id, bi_venta_caja_tipo_id, bi_venta_rango_etario_id, 
+    bi_venta_medio_pago_id, bi_venta_ubicacion_id, bi_venta_sucursal_id, venta_prom_total, venta_total_monto, 
+    venta_cant_prom_productos, venta_cantidad, venta_total_importe_cuotas, venta_promedio_cuota)     
+    select
         [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
         [MONSTERS_INC].BI_Obtener_Id_Turno(t.tick_fecha_hora),
         [MONSTERS_INC].BI_Obtener_Id_Caja_Tipo(t.tick_caja),
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(t.tick_empleado),
-        [MONSTERS_INC].BI_Obtener_Id_Ticket(t.tick_nro),
         [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(p.pago_medio_pago),
-        it.item_tick_total, 
-        it.item_tick_cantidad,
-        it.item_tick_descuento_aplicado,
-        it.item_tick_descuento_aplicado - (
-            SELECT mp.desc_apli_descuento_aplicado 
-            FROM [MONSTERS_INC].Pago pp
-                INNER JOIN [MONSTERS_INC].Descuento_Medio_Pago_Aplicado mp on mp.desc_apli_pago = pp.pago_id
-            WHERE pp.pago_id = p.pago_id
-        ),
-        (SELECT cm.catm_descripcion FROM [MONSTERS_INC].Producto pc
-            INNER JOIN [MONSTERS_INC].Subcategoria sc ON pc.prod_subcategoria = sc.subc_id
-            INNER JOIN [MONSTERS_INC].Categoria_Mayor cm ON cm.catm_id = sc.subc_categoria_mayor
-        WHERE pc.prod_id = it.item_tick_producto)
-    FROM [MONSTERS_INC].Ticket t
-        INNER JOIN [MONSTERS_INC].Item_Ticket it on it.item_tick_ticket = t.tick_id
-        LEFT JOIN [MONSTERS_INC].Pago p ON p.pago_ticket = t.tick_id
+        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(pr.prov_nombre, l.loca_nombre),
+        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero),
+        avg(distinct t.tick_total) as PromedioTotalVenta,
+        sum(distinct t.tick_total) as TotalVenta,
+        sum(it.item_tick_cantidad) / count(*) as CantidadPromedioProductos,
+        count(distinct t.tick_id) as CantidadVentas,
+        sum(distinct (
+            case 
+                when d.deta_tarjeta_cuotas is null then 0
+                else t.tick_total
+            end
+        )) as TotalImporteVentasEnCuotas,
+        sum(distinct (
+            case 
+                when d.deta_tarjeta_cuotas is null then 0
+                else t.tick_total / d.deta_tarjeta_cuotas 
+            end
+        )) / nullif(
+            count(distinct case when p.pago_detalle is not null then p.pago_detalle else -1 end) - 1 + sum(distinct case when p.pago_detalle is not null then 1 else 0 end)
+            , 0) as ImportePromedioCuota -- No considera filas que no tengan pagos en cuotas, esto evita un warning de ANSI SQL (en terminos de estandar)
+        FROM [MONSTERS_INC].Ticket t
+            INNER JOIN [MONSTERS_INC].Item_Ticket it on it.item_tick_ticket = t.tick_id
+            INNER JOIN [MONSTERS_INC].Pago p on p.pago_ticket = t.tick_id
+            LEFT JOIN [MONSTERS_INC].Detalle_Pago d on d.deta_id = p.pago_detalle
+            INNER JOIN [MONSTERS_INC].Caja c on c.caja_id = t.tick_caja
+            INNER JOIN [MONSTERS_INC].Sucursal s on s.sucu_id = c.caja_sucursal
+            INNER JOIN [MONSTERS_INC].Localidad l on l.loca_id = s.sucu_localidad
+            INNER JOIN [MONSTERS_INC].Provincia pr on pr.prov_id = l.loca_provincia
+    group by  
+        [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
+        [MONSTERS_INC].BI_Obtener_Id_Turno(t.tick_fecha_hora),
+        [MONSTERS_INC].BI_Obtener_Id_Caja_Tipo(t.tick_caja),
+        [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(t.tick_empleado),
+        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(p.pago_medio_pago),
+        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(pr.prov_nombre, l.loca_nombre),
+        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero)
 END
 GO
 
@@ -699,30 +685,31 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Hechos_Envio
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].BI_Hechos_Envio
-    (bi_tiempo_id, bi_sucursal_id,  
-    bi_rango_etario_id, bi_ubicacion_id, envi_fecha_programada, envi_fecha_entrega,envi_costo)
-    SELECT 
+    (bi_envio_tiempo_id, bi_envio_rango_etario_id, bi_envio_ubicacion_id,
+     bi_envio_sucursal_id, bi_envio_cantidad, bi_envio_max_costo, bi_envio_porc_cumpl)
+    select 
         [MONSTERS_INC].BI_Obtener_Id_Tiempo(e.envio_fecha),
-        (
-            select 
-                [MONSTERS_INC].BI_Obtener_Id_Sucursal(sc.sucu_numero)
-            from [MONSTERS_INC].Ticket ts
-                inner join [MONSTERS_INC].Caja cs on ts.tick_caja = cs.caja_id
-                inner join [MONSTERS_INC].Sucursal sc on cs.caja_sucursal = sc.sucu_id
-            where e.envio_ticket = ts.tick_id
-        ),
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(c.clie_id),
-        (SELECT TOP 1
-                [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre)
-            FROM [MONSTERS_INC].Localidad l
-            INNER JOIN [MONSTERS_INC].Provincia p ON p.prov_id = l.loca_provincia
-            WHERE l.loca_id = c.clie_localidad),
-        e.envio_fecha,
-        en.entr_fecha_hora_entrega,
-        e.envio_costo
+        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre),
+        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero),
+        count(distinct e.envio_id) as CantidadEnvios,
+        max(e.envio_costo) as EnvioMaximo,
+        (SUM(CASE WHEN CAST(en.entr_fecha_hora_entrega AS date) <= CAST(e.envio_fecha AS date) THEN 1 ELSE 0 END) 
+        / 
+        count(distinct e.envio_id)) * 100 AS PorcentajeCumplimiento
     FROM [MONSTERS_INC].Envio e
         INNER JOIN [MONSTERS_INC].Entrega en on en.entr_id = e.envio_entrega
         INNER JOIN [MONSTERS_INC].Cliente c on c.clie_id = e.envio_cliente
+        inner join [MONSTERS_INC].Localidad l on l.loca_id = c.clie_localidad
+        inner join [MONSTERS_INC].Provincia p on p.prov_id = l.loca_provincia
+        inner join [MONSTERS_INC].Ticket t on t.tick_id = e.envio_ticket
+        inner join [MONSTERS_INC].Caja cj on cj.caja_id = t.tick_caja
+        inner join [MONSTERS_INC].Sucursal s on s.sucu_id = cj.caja_sucursal
+    group by
+        [MONSTERS_INC].BI_Obtener_Id_Tiempo(e.envio_fecha),
+        [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(c.clie_id),
+        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre),
+        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero)
 END
 GO
 
@@ -765,14 +752,13 @@ GO
 
 CREATE VIEW [MONSTERS_INC].BI_Vista_Ticket_Promedio_Mensual AS
 SELECT
-    sum(v.cantidad_productos*v.importe_unitario) / count(distinct v.bi_ticket_id) AS PromedioMes,
-    count(distinct v.bi_ticket_id) as aux,
-    u.localidad_desc,
-    t.bi_tiempo_anio AS Año,
+    avg(v.venta_prom_total) as Promedio,
+    u.localidad_desc as Localidad,
+    t.bi_tiempo_anio AS Anio,
     t.bi_tiempo_mes AS Mes
 FROM [MONSTERS_INC].BI_Hechos_Venta v
-	JOIN [MONSTERS_INC].BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
-	JOIN [MONSTERS_INC].BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
+	JOIN [MONSTERS_INC].BI_Tiempo t ON v.bi_venta_tiempo_id = t.bi_tiempo_id
+	JOIN [MONSTERS_INC].BI_Ubicacion u ON v.bi_venta_ubicacion_id = u.bi_ubicacion_id
 GROUP BY
     t.bi_tiempo_mes,
     t.bi_tiempo_anio,
@@ -787,7 +773,7 @@ GO
 
 CREATE VIEW [MONSTERS_INC].BI_Vista_Cantidad_Unidades_Promedio AS
 SELECT
-	sum(v.cantidad_productos) / count(distinct v.bi_ticket_id) as Promedio,
+	avg(v.venta_cant_prom_productos) as Promedio,
 	--para cada turno
 	tu.turno_desc as Turno,
     --para cada cuatrimestre
@@ -795,11 +781,9 @@ SELECT
     --para cada anio
 	t.bi_tiempo_anio as Año
 FROM [MONSTERS_INC].BI_Hechos_Venta v
-	inner join [MONSTERS_INC].BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
-	inner join [MONSTERS_INC].BI_Turno tu on tu.bi_turno_id = v.bi_turno_id
-	inner join [MONSTERS_INC].BI_Ticket i on i.bi_ticket_id = v.bi_ticket_id
+	inner join [MONSTERS_INC].BI_Tiempo t on v.bi_venta_tiempo_id = t.bi_tiempo_id
+	inner join [MONSTERS_INC].BI_Turno tu on tu.bi_turno_id = v.bi_venta_turno_id
 GROUP BY
-	--3,
 	tu.turno_desc,
 	t.bi_tiempo_cuatrimestre,
 	t.bi_tiempo_anio
@@ -817,23 +801,18 @@ SELECT
     c.caja_desc as TipoCaja,
     t.bi_tiempo_cuatrimestre as Cuatrimestre,
     t.bi_tiempo_anio as Anio,
-    (
-        count(distinct v.bi_ticket_id) * 100 /
-        (
-            SELECT 
-                count(distinct v2.bi_ticket_id)
-		    FROM  [MONSTERS_INC].BI_Hechos_Venta v2
-            	INNER JOIN  [MONSTERS_INC].BI_Tiempo t2 ON v2.bi_tiempo_id = t2.bi_tiempo_id
-                INNER JOIN [MONSTERS_INC].BI_Caja_Tipo c2 ON c2.bi_caja_tipo_id = v2.bi_caja_tipo_id
-	            INNER JOIN [MONSTERS_INC].BI_Rango_Etario r2 on r2.bi_rango_etario_id = v2.bi_rango_etario_id
-                WHERE c2.caja_desc = c.caja_desc and r.rango_etario_desc = r2.rango_etario_desc and t2.bi_tiempo_anio = t.bi_tiempo_anio
-        )
-    ) as Porcentaje
+    sum(v.venta_cantidad) / (
+        select 
+            sum(vs.venta_cantidad)
+        from [MONSTERS_INC].BI_Hechos_Venta vs
+            inner join [MONSTERS_INC].BI_Tiempo ts on vs.bi_venta_tiempo_id = ts.bi_tiempo_id
+        where ts.bi_tiempo_anio = t.bi_tiempo_anio
+    ) * 100 as Porcentaje
 FROM 
     [MONSTERS_INC].BI_Hechos_Venta v
-	JOIN [MONSTERS_INC].BI_Tiempo t ON v.bi_tiempo_id = t.bi_tiempo_id
-	JOIN [MONSTERS_INC].BI_Caja_Tipo c ON c.bi_caja_tipo_id = v.bi_caja_tipo_id
-	JOIN [MONSTERS_INC].BI_Rango_Etario r on r.bi_rango_etario_id = v.bi_rango_etario_id
+	JOIN [MONSTERS_INC].BI_Tiempo t ON v.bi_venta_tiempo_id = t.bi_tiempo_id
+	JOIN [MONSTERS_INC].BI_Caja_Tipo c ON c.bi_caja_tipo_id = v.bi_venta_caja_tipo_id
+	JOIN [MONSTERS_INC].BI_Rango_Etario r on r.bi_rango_etario_id = v.bi_venta_rango_etario_id
 GROUP BY
     r.rango_etario_desc,
     c.caja_desc,	
@@ -854,11 +833,11 @@ SELECT
     t.bi_tiempo_mes as Mes,
     t.bi_tiempo_anio as Año,
 	tu.turno_desc as Turno,
-    sum(v.cantidad_productos) as CantidadProductos
+    sum(v.venta_cantidad) as CantidadProductos
 FROM [MONSTERS_INC].BI_Hechos_Venta v
-    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = v.bi_tiempo_id
-	JOIN [MONSTERS_INC].BI_Turno tu ON tu.bi_turno_id = v.bi_turno_id
-    JOIN [MONSTERS_INC].BI_Ubicacion u ON v.bi_ubicacion_id = u.bi_ubicacion_id
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = v.bi_venta_tiempo_id
+	JOIN [MONSTERS_INC].BI_Turno tu ON tu.bi_turno_id = v.bi_venta_turno_id
+    JOIN [MONSTERS_INC].BI_Ubicacion u ON v.bi_venta_ubicacion_id = u.bi_ubicacion_id
 GROUP BY
     tu.turno_desc,
 	u.localidad_desc,
@@ -925,12 +904,10 @@ SELECT
     s.bi_sucursal_id AS Sucursal,
     t.bi_tiempo_anio AS Año,
     t.bi_tiempo_mes AS Mes,
-	(SUM(CASE WHEN CAST(e.envi_fecha_entrega AS date) <= CAST(e.envi_fecha_programada AS date) THEN 1 ELSE 0 END) 
-    / 
-    COUNT(e.bi_hechos_envio_id))*100 AS Porcentaje
+	sum(e.bi_envio_porc_cumpl) / count(*)
 FROM [MONSTERS_INC].BI_Hechos_Envio e
-    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = e.bi_tiempo_id
-    JOIN [MONSTERS_INC].BI_Sucursal s ON e.bi_sucursal_id = s.bi_sucursal_id
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = e.bi_envio_tiempo_id
+    JOIN [MONSTERS_INC].BI_Sucursal s ON e.bi_envio_sucursal_id = s.bi_sucursal_id
 GROUP BY s.bi_sucursal_id, t.bi_tiempo_anio, t.bi_tiempo_mes;
 GO
 
@@ -945,10 +922,10 @@ SELECT
     r.rango_etario_desc as RangoEtario, 
     t.bi_tiempo_cuatrimestre as Cuatrimeste,
     t.bi_tiempo_anio as Año,
-    count(bi_hechos_envio_id) as Envios
+    count(e.bi_envio_cantidad) as CantidadEnvios
 FROM [MONSTERS_INC].BI_Hechos_Envio e
-    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = e.bi_tiempo_id 
-	JOIN [MONSTERS_INC].BI_Rango_Etario r ON r.bi_rango_etario_id = e.bi_rango_etario_id
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = e.bi_envio_tiempo_id 
+	JOIN [MONSTERS_INC].BI_Rango_Etario r ON r.bi_rango_etario_id = e.bi_envio_rango_etario_id
 GROUP BY
     r.rango_etario_desc,
     t.bi_tiempo_cuatrimestre,
@@ -963,13 +940,13 @@ GO
 
 CREATE VIEW [MONSTERS_INC].BI_Vista_Top_5_Localidades_Mayor_Costo_Envio AS
 SELECT TOP 5
-    u.localidad_desc as Localidad
+    u.localidad_desc as Localidad,
+    max(e.bi_envio_max_costo) as CostoEnvio
 FROM [MONSTERS_INC].BI_Hechos_Envio e
-	JOIN [MONSTERS_INC].BI_Ubicacion u on u.bi_ubicacion_id = e.bi_ubicacion_id
+	JOIN [MONSTERS_INC].BI_Ubicacion u on u.bi_ubicacion_id = e.bi_envio_ubicacion_id
 GROUP BY
 	u.localidad_desc
-ORDER BY
-    sum(e.envi_costo) desc
+ORDER BY 2 desc
 GO
 
 -----------------------------------------------------------------------------  10
@@ -981,19 +958,22 @@ GO
 CREATE VIEW [MONSTERS_INC].BI_Vista_Top_3_Sucursales_Importe_Cuotas AS
 SELECT top 3
     s.bi_sucursal_id as Sucursal,
-    c.bi_medio_pago_id as MedioDePago,
+    mp.medio_pago_nombre + ' | ' + mp.medio_pago_tipo as MedioDePago,
     t.bi_tiempo_anio as Anio,
-    sum(c.importe_cuota) as ImporteCuota
-FROM [MONSTERS_INC].BI_Hechos_Cuota c
-    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = c.bi_tiempo_id
-	join [MONSTERS_INC].BI_Sucursal s on c.bi_sucursal_id = s.bi_sucursal_id
-WHERE c.cantidad_cuotas IS NOT NULL -- Puede ser null, cuidado
+    t.bi_tiempo_mes as Mes,
+    v.venta_total_importe_cuotas as ImporteCuota
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = v.bi_venta_tiempo_id
+	join [MONSTERS_INC].BI_Sucursal s on v.bi_venta_sucursal_id = s.bi_sucursal_id
+    join [MONSTERS_INC].BI_Medio_Pago mp on mp.bi_medio_pago_id = v.bi_venta_medio_pago_id 
 GROUP BY
     s.bi_sucursal_id,
 	t.bi_tiempo_anio,
-    c.bi_medio_pago_id
+    t.bi_tiempo_mes,
+    mp.medio_pago_nombre + ' | ' + mp.medio_pago_tipo,
+    v.venta_total_importe_cuotas
 ORDER BY
-    sum(c.importe_cuota) desc
+    v.venta_total_importe_cuotas desc
 GO
 
 -----------------------------------------------------------------------------  11
@@ -1005,10 +985,9 @@ GO
 CREATE VIEW [MONSTERS_INC].BI_Vista_Promedio_Importe_Cuota_RangoEtario AS
 SELECT
     re.rango_etario_desc AS RangoEtario,
-    AVG(ISNULL(c.importe_cuota,0)) AS PromedioImporteCuota
-FROM [MONSTERS_INC].BI_Hechos_Cuota c
-    INNER JOIN [MONSTERS_INC].BI_Rango_Etario re ON re.bi_rango_etario_id = c.bi_rango_etario_id
-WHERE c.cantidad_cuotas IS NOT NULL -- Puede ser null, cuidado
+    avg(v.venta_promedio_cuota) AS PromedioImporteCuota
+FROM [MONSTERS_INC].BI_Hechos_Venta v
+    INNER JOIN [MONSTERS_INC].BI_Rango_Etario re ON re.bi_rango_etario_id = v.bi_venta_rango_etario_id
 GROUP BY
     re.rango_etario_desc
 GO
@@ -1045,7 +1024,6 @@ EXEC [MONSTERS_INC].Migrar_BI_Sucursal
 EXEC [MONSTERS_INC].Migrar_BI_Rango_Etario
 EXEC [MONSTERS_INC].Migrar_BI_Turno
 EXEC [MONSTERS_INC].Migrar_BI_Caja_Tipo
-EXEC [MONSTERS_INC].Migrar_BI_Ticket
 EXEC [MONSTERS_INC].Migrar_BI_Medio_Pago
 EXEC [MONSTERS_INC].Migrar_BI_Hechos_Venta
 EXEC [MONSTERS_INC].Migrar_BI_Hechos_Envio

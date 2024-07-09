@@ -209,11 +209,10 @@ CREATE TABLE [MONSTERS_INC].[Descuento_Medio_Pago]
 (
     [desc_id] numeric(18) IDENTITY NOT NULL,
     [desc_descripcion] nvarchar(100),
-    [desc_medio_pago] numeric(18) NOT NULL,
     [desc_fecha_inicio] datetime,
 	[desc_fecha_fin] datetime,
-	[desc_porcentaje] decimal(18,0),
-	[desc_tope] decimal(18,0)
+	[desc_porcentaje] decimal(18,2),
+	[desc_tope] decimal(18,2)
 );
 
 /* DESCUENTO MEDIO PAGO APLICADO */
@@ -284,7 +283,7 @@ CREATE TABLE [MONSTERS_INC].[Envio]
 	[envio_hora_inicio] datetime,
 	[envio_hora_fin] datetime,
 	[envio_cliente] numeric(18) NOT NULL,
-	[envio_costo] numeric(18),
+	[envio_costo] decimal(18,2),
 	[envio_estado] numeric(18) NOT NULL,
 	[envio_entrega] numeric(18)
 );
@@ -472,10 +471,6 @@ ALTER TABLE [MONSTERS_INC].[Item_Ticket]
 ALTER TABLE [MONSTERS_INC].[Item_Ticket]
     ADD CONSTRAINT [FK_Item_Ticket_item_tick_promocion] FOREIGN KEY ([item_tick_promocion]) 
     REFERENCES [MONSTERS_INC].[Promocion]([prom_id]);
-
-ALTER TABLE [MONSTERS_INC].[Descuento_Medio_Pago]
-    ADD CONSTRAINT [FK_Descuento_Medio_Pago_desc_medio_pago] FOREIGN KEY ([desc_medio_pago]) 
-    REFERENCES [MONSTERS_INC].[Medio_Pago]([medio_pago_id]);
 
 ALTER TABLE [MONSTERS_INC].[Ticket]
     ADD CONSTRAINT [FK_Ticket_tick_caja] FOREIGN KEY ([tick_caja]) 
@@ -909,19 +904,19 @@ CREATE PROCEDURE [MONSTERS_INC].Migrar_Descuento_Medio_Pago
 AS
 BEGIN
     INSERT INTO [MONSTERS_INC].Descuento_Medio_Pago 
-    (desc_descripcion, desc_medio_pago, desc_fecha_inicio, desc_fecha_fin, desc_porcentaje, desc_tope) 
-        SELECT DISTINCT DESCUENTO_DESCRIPCION AS desc_descripcion, (
-            SELECT medio_pago_id 
-            FROM [MONSTERS_INC].Medio_Pago
-            WHERE PAGO_MEDIO_PAGO = medio_pago_nombre AND PAGO_TIPO_MEDIO_PAGO = medio_pago_tipo) AS desc_medio_pago, 
-        DESCUENTO_FECHA_INICIO AS desc_fecha_inicio, DESCUENTO_FECHA_FIN AS desc_fecha_fin, DESCUENTO_PORCENTAJE_DESC AS desc_porcentaje,
-        DESCUENTO_TOPE AS desc_tope
+    (desc_descripcion, desc_fecha_inicio, desc_fecha_fin, desc_porcentaje, desc_tope) 
+        SELECT DISTINCT 
+            DESCUENTO_DESCRIPCION AS desc_descripcion,
+            DESCUENTO_FECHA_INICIO AS desc_fecha_inicio, 
+            DESCUENTO_FECHA_FIN AS desc_fecha_fin, 
+            DESCUENTO_PORCENTAJE_DESC AS desc_porcentaje,
+            DESCUENTO_TOPE AS desc_tope
         FROM gd_esquema.Maestra
         WHERE DESCUENTO_DESCRIPCION IS NOT NULL 
-        AND DESCUENTO_FECHA_INICIO IS NOT NULL
-        AND DESCUENTO_FECHA_FIN IS NOT NULL
-        AND DESCUENTO_PORCENTAJE_DESC IS NOT NULL
-        AND DESCUENTO_TOPE IS NOT NULL
+            AND DESCUENTO_FECHA_INICIO IS NOT NULL
+            AND DESCUENTO_FECHA_FIN IS NOT NULL
+            AND DESCUENTO_PORCENTAJE_DESC IS NOT NULL
+            AND DESCUENTO_TOPE IS NOT NULL
 END
 GO
 
@@ -989,7 +984,7 @@ AS
 BEGIN
     INSERT INTO [MONSTERS_INC].[Entrega]
         (entr_fecha_hora_entrega)
-    SELECT ENVIO_FECHA_ENTREGA
+    SELECT DISTINCT ENVIO_FECHA_ENTREGA
     FROM gd_esquema.Maestra
     WHERE ENVIO_FECHA_ENTREGA IS NOT NULL
 END
@@ -1013,15 +1008,15 @@ BEGIN
     FROM 
         gd_esquema.Maestra m
     LEFT JOIN 
-        Cliente c ON m.CLIENTE_DNI = c.clie_dni 
+        [MONSTERS_INC].Cliente c ON m.CLIENTE_DNI = c.clie_dni 
                   AND m.CLIENTE_APELLIDO = c.clie_apellido 
                   AND m.CLIENTE_NOMBRE = c.clie_nombre
     LEFT JOIN 
-        Entrega e ON m.ENVIO_FECHA_ENTREGA = e.entr_fecha_hora_entrega
+        [MONSTERS_INC].Entrega e ON m.ENVIO_FECHA_ENTREGA = e.entr_fecha_hora_entrega
     LEFT JOIN 
-        Estado es ON m.ENVIO_ESTADO = es.esta_descripcion
+        [MONSTERS_INC].Estado es ON m.ENVIO_ESTADO = es.esta_descripcion
     LEFT JOIN 
-        Ticket t ON m.TICKET_FECHA_HORA = t.tick_fecha_hora 
+        [MONSTERS_INC].Ticket t ON m.TICKET_FECHA_HORA = t.tick_fecha_hora 
                  AND m.TICKET_NUMERO = t.tick_nro
     WHERE 
         m.ENVIO_COSTO IS NOT NULL
@@ -1101,8 +1096,9 @@ BEGIN
     FROM gd_esquema.Maestra m
     INNER JOIN [MONSTERS_INC].Ticket t ON m.TICKET_NUMERO = t.tick_nro
     INNER JOIN [MONSTERS_INC].Pago p ON tick_id = p.pago_ticket AND p.pago_fecha = m.PAGO_FECHA
-    INNER JOIN [MONSTERS_INC].Descuento_Medio_Pago d ON m.DESCUENTO_DESCRIPCION = d.desc_descripcion 
-        AND m.DESCUENTO_CODIGO = d.desc_id
+    LEFT JOIN [MONSTERS_INC].Descuento_Medio_Pago d ON m.DESCUENTO_DESCRIPCION = d.desc_descripcion 
+        AND m.DESCUENTO_FECHA_FIN = d.desc_fecha_fin and m.DESCUENTO_FECHA_INICIO = d.desc_fecha_inicio and m.DESCUENTO_PORCENTAJE_DESC = d.desc_porcentaje
+    WHERE m.DESCUENTO_DESCRIPCION IS NOT NULL
 END
 GO
 
