@@ -68,7 +68,7 @@ IF OBJECT_ID('MONSTERS_INC.BI_Item_Ticket', 'U') IS NOT NULL DROP TABLE MONSTERS
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Venta', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Venta;
 IF OBJECT_ID('MONSTERS_INC.BI_Caja_Tipo', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Caja_Tipo;
 IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Envio', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Envio;
-IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Cuota', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Cuota;
+IF OBJECT_ID('MONSTERS_INC.BI_Hechos_Promocion', 'U') IS NOT NULL DROP TABLE MONSTERS_INC.BI_Hechos_Promocion;
 
 PRINT '--- TABLAS BI DROPEADAS CORRECTAMENTE ---';
 
@@ -183,25 +183,12 @@ CREATE TABLE [MONSTERS_INC].[BI_Hechos_Envio]
 CREATE TABLE [MONSTERS_INC].[BI_Hechos_Promocion]
 (
     [bi_hechos_promo_id] numeric(18) IDENTITY NOT NULL,
-    [bi_tiempo_id] numeric(18) NOT NULL,
-    [bi_sucursal_id] numeric(18) NOT NULL,
-    [bi_rango_etario_id] numeric(18) NOT NULL,
-    [bi_medio_pago_id] numeric(18) NOT NULL,
-    [cantidad_cuotas] numeric(18),
-    [importe_cuota] decimal(18,2)
-);
-
-
-/* BI Hechos_Couta */
-CREATE TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
-(
-    [bi_hechos_cuota_id] numeric(18) IDENTITY NOT NULL,
-    [bi_tiempo_id] numeric(18) NOT NULL,
-    [bi_sucursal_id] numeric(18) NOT NULL,
-    [bi_rango_etario_id] numeric(18) NOT NULL,
-    [bi_medio_pago_id] numeric(18) NOT NULL,
-    [cantidad_cuotas] numeric(18),
-    [importe_cuota] decimal(18,2)
+    [bi_promo_tiempo_id] numeric(18) NOT NULL,
+    [bi_promo_categoria_id] numeric(18) NOT NULL,
+    [bi_promo_mp_id] numeric(18) NOT NULL,
+    [bi_promo_porc_desc] decimal(18,2),
+    [bi_promo_max_desc] decimal(18,2),
+    [bi_promo_porc_desc_aplicado] decimal(18,2)
 );
 
 ------------------------------------------------------------------------
@@ -235,8 +222,9 @@ ALTER TABLE [MONSTERS_INC].[BI_Caja_Tipo]
 ALTER TABLE [MONSTERS_INC].[BI_Hechos_Envio]
     ADD CONSTRAINT [PK_BI_Hechos_Envio] PRIMARY KEY CLUSTERED ([bi_hechos_envio_id] ASC) 
 
-ALTER TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
-    ADD CONSTRAINT [PK_BI_Hechos_Cuota] PRIMARY KEY CLUSTERED ([bi_hechos_cuota_id] ASC) 
+ALTER TABLE [MONSTERS_INC].[BI_Hechos_Promocion]
+    ADD CONSTRAINT [PK_BI_Hechos_Promocion] PRIMARY KEY CLUSTERED ([bi_hechos_promo_id] ASC) 
+
 
 /* CONSTRAINT GENERATION - FKs*/
 
@@ -288,20 +276,16 @@ ALTER TABLE [MONSTERS_INC].[BI_Hechos_Envio]
 
 --
 
-ALTER TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
-    ADD CONSTRAINT [FK_BI_Hechos_Cuota_bi_tiempo_id] FOREIGN KEY ([bi_tiempo_id])
+ALTER TABLE [MONSTERS_INC].[BI_Hechos_Promocion]
+    ADD CONSTRAINT [FK_BI_Hechos_Cuota_bi_promo_tiempo_id] FOREIGN KEY ([bi_promo_tiempo_id])
     REFERENCES [MONSTERS_INC].[BI_Tiempo]([bi_tiempo_id]);
 
-ALTER TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
-    ADD CONSTRAINT [FK_BI_Hechos_Cuota_bi_sucursal_id] FOREIGN KEY ([bi_sucursal_id])
-    REFERENCES [MONSTERS_INC].[BI_Sucursal]([bi_sucursal_id]);
+ALTER TABLE [MONSTERS_INC].[BI_Hechos_Promocion]
+    ADD CONSTRAINT [FK_BI_Hechos_Cuota_bi_promo_categoria_id] FOREIGN KEY ([bi_promo_categoria_id])
+    REFERENCES [MONSTERS_INC].[BI_Categoria]([bi_categoria_id]);
 
-ALTER TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
-    ADD CONSTRAINT [FK_BI_Hechos_Cuota_bi_rango_etario_id] FOREIGN KEY ([bi_rango_etario_id])
-    REFERENCES [MONSTERS_INC].[BI_Rango_Etario]([bi_rango_etario_id]);
-
-ALTER TABLE [MONSTERS_INC].[BI_Hechos_Cuota]
-    ADD CONSTRAINT [FK_BI_Hechos_Cuota_bi_cliente_id] FOREIGN KEY ([bi_medio_pago_id])
+ALTER TABLE [MONSTERS_INC].[BI_Hechos_Promocion]
+    ADD CONSTRAINT [FK_BI_Hechos_Cuota_bi_promo_mp_id] FOREIGN KEY ([bi_promo_mp_id])
     REFERENCES [MONSTERS_INC].[BI_Medio_Pago]([bi_medio_pago_id]);
 
 --
@@ -356,8 +340,14 @@ AS
         SELECT 
             @idFecha = t.bi_tiempo_id
         FROM [MONSTERS_INC].BI_Tiempo t
-        WHERE year(@unaFecha) = t.bi_tiempo_anio AND datepart(Q, @unaFecha) = t.bi_tiempo_cuatrimestre
-            AND month(@unaFecha) = t.bi_tiempo_mes
+        WHERE year(@unaFecha) = t.bi_tiempo_anio AND 
+        ( 
+            CASE
+                WHEN MONTH(@unaFecha) BETWEEN 1 AND 4 THEN 1
+                WHEN MONTH(@unaFecha) BETWEEN 5 AND 8 THEN 2
+                WHEN MONTH(@unaFecha) BETWEEN 9 AND 12 THEN 3
+            END
+        ) = t.bi_tiempo_cuatrimestre AND month(@unaFecha) = t.bi_tiempo_mes
 
         RETURN @idFecha
     END
@@ -406,6 +396,21 @@ BEGIN
     WHERE c.caja_id = @unIdCaja
 
     RETURN @idCajaTipo
+END
+GO
+
+CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Categoria(@unaDescripcionCat nvarchar(255), @unaDescripcionSubcat nvarchar(255))
+RETURNS numeric(18)
+AS
+BEGIN
+    DECLARE @idCategoria AS numeric(18)
+
+    SELECT 
+        @idCategoria = c.bi_categoria_id
+    FROM [MONSTERS_INC].BI_Categoria c
+    WHERE c.catm_descripcion = @unaDescripcionCat and c.subc_descripcion = @unaDescripcionSubcat
+
+    RETURN @idCategoria
 END
 GO
 
@@ -499,25 +504,50 @@ BEGIN
     (bi_tiempo_anio, bi_tiempo_cuatrimestre , bi_tiempo_mes)
     SELECT 
         year(t.tick_fecha_hora),
-        datepart(Q, t.tick_fecha_hora),
+        (  
+            CASE
+                WHEN MONTH(t.tick_fecha_hora) BETWEEN 1 AND 4 THEN 1
+                WHEN MONTH(t.tick_fecha_hora) BETWEEN 5 AND 8 THEN 2
+                WHEN MONTH(t.tick_fecha_hora) BETWEEN 9 AND 12 THEN 3
+            END
+        ),
+        --datepart(Q, t.tick_fecha_hora),
         month(t.tick_fecha_hora)
     FROM [MONSTERS_INC].Ticket t
     UNION
     SELECT 
         year(e.entr_fecha_hora_entrega),
-        datepart(Q, e.entr_fecha_hora_entrega),
+        (  
+            CASE
+                WHEN MONTH(e.entr_fecha_hora_entrega) BETWEEN 1 AND 4 THEN 1
+                WHEN MONTH(e.entr_fecha_hora_entrega) BETWEEN 5 AND 8 THEN 2
+                WHEN MONTH(e.entr_fecha_hora_entrega) BETWEEN 9 AND 12 THEN 3
+            END
+        ),
         month(e.entr_fecha_hora_entrega)
     FROM [MONSTERS_INC].Entrega e
     UNION
     SELECT 
         year(en.envio_fecha),
-        datepart(Q, en.envio_fecha),
+        (  
+            CASE
+                WHEN MONTH(en.envio_fecha) BETWEEN 1 AND 4 THEN 1
+                WHEN MONTH(en.envio_fecha) BETWEEN 5 AND 8 THEN 2
+                WHEN MONTH(en.envio_fecha) BETWEEN 9 AND 12 THEN 3
+            END
+        ),
         month(en.envio_fecha)
     FROM [MONSTERS_INC].Envio en
     UNION
     SELECT 
         year(d.desc_fecha_fin),
-        datepart(Q, d.desc_fecha_fin),
+        (  
+            CASE
+                WHEN MONTH(d.desc_fecha_fin) BETWEEN 1 AND 4 THEN 1
+                WHEN MONTH(d.desc_fecha_fin) BETWEEN 5 AND 8 THEN 2
+                WHEN MONTH(d.desc_fecha_fin) BETWEEN 9 AND 12 THEN 3
+            END
+        ),
         month(d.desc_fecha_fin)
     FROM [MONSTERS_INC].Descuento_Medio_Pago d
 END
@@ -593,8 +623,8 @@ BEGIN
     SELECT
         c.subc_descripcion,
         cm.catm_descripcion
-    FROM [MONSTERS_INC].Categoria c
-        INNER JOIN [MONSTERS_INC].Categoria_Mayor cm on cm.subc_categoria_mayor = c.catm_id 
+    FROM [MONSTERS_INC].Subcategoria c
+        INNER JOIN [MONSTERS_INC].Categoria_Mayor cm on c.subc_categoria_mayor = cm.catm_id 
 END
 GO
 
@@ -660,7 +690,7 @@ BEGIN
             end
         )) / nullif(
             count(distinct case when p.pago_detalle is not null then p.pago_detalle else -1 end) - 1 + sum(distinct case when p.pago_detalle is not null then 1 else 0 end)
-            , 0) as ImportePromedioCuota -- No considera filas que no tengan pagos en cuotas, esto evita un warning de ANSI SQL (en terminos de estandar)
+            , 0) as ImportePromedioCuota -- No considera filas que no tengan pagos en cuotas, esto evita un warning de ANSI SQL (en terminos de estandar). Es equivalente a nullif(count(distinct p.pago_detalle))
         FROM [MONSTERS_INC].Ticket t
             INNER JOIN [MONSTERS_INC].Item_Ticket it on it.item_tick_ticket = t.tick_id
             INNER JOIN [MONSTERS_INC].Pago p on p.pago_ticket = t.tick_id
@@ -681,6 +711,7 @@ END
 GO
 
 /* BI_Hechos_Envio */
+
 CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Hechos_Envio
 AS
 BEGIN
@@ -688,7 +719,7 @@ BEGIN
     (bi_envio_tiempo_id, bi_envio_rango_etario_id, bi_envio_ubicacion_id,
      bi_envio_sucursal_id, bi_envio_cantidad, bi_envio_max_costo, bi_envio_porc_cumpl)
     select 
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(e.envio_fecha),
+        [MONSTERS_INC].BI_Obtener_Id_Tiempo(en.entr_fecha_hora_entrega),
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(c.clie_id),
         [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre),
         [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero),
@@ -706,39 +737,42 @@ BEGIN
         inner join [MONSTERS_INC].Caja cj on cj.caja_id = t.tick_caja
         inner join [MONSTERS_INC].Sucursal s on s.sucu_id = cj.caja_sucursal
     group by
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(e.envio_fecha),
+        [MONSTERS_INC].BI_Obtener_Id_Tiempo(en.entr_fecha_hora_entrega),
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(c.clie_id),
         [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre),
         [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero)
 END
 GO
 
-/* BI_Hechos_Cuota */
-CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Hechos_Cuota
+/* BI_Hechos_Promocion */
+
+CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Hechos_Promocion
 AS
 BEGIN
-    INSERT INTO [MONSTERS_INC].[BI_Hechos_Cuota]
-    (bi_tiempo_id, bi_sucursal_id,  
-    bi_rango_etario_id, bi_medio_pago_id, cantidad_cuotas, importe_cuota)
-    SELECT 
+    INSERT INTO [MONSTERS_INC].[BI_Hechos_Promocion]
+    (bi_promo_tiempo_id, bi_promo_categoria_id, bi_promo_mp_id, 
+    bi_promo_porc_desc, bi_promo_max_desc, bi_promo_porc_desc_aplicado)
+    SELECT
         [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
-        (
-            select 
-                [MONSTERS_INC].BI_Obtener_Id_Sucursal(sc.sucu_numero)
-            from [MONSTERS_INC].Sucursal sc
-            where sc.sucu_id = c.caja_sucursal
-        ),
-        [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(e.envio_cliente),
-        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(p.pago_medio_pago),
-        d.deta_tarjeta_cuotas,
-        t.tick_total/d.deta_tarjeta_cuotas
+        [MONSTERS_INC].BI_Obtener_Id_Categoria(cm.catm_descripcion, s.subc_descripcion),
+        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(pg.pago_medio_pago),
+        sum(distinct t.tick_total_descuento + t.tick_total_descuento_mp) / sum(distinct t.tick_total_productos) * 100 as PorcentajeDescAplicado,
+        sum(item_tick_descuento_aplicado) as SumDescuentoAplicadoProducto,
+        sum(distinct t.tick_total_descuento_mp) / sum(distinct t.tick_total_productos) * 100 as PorcentajeDesc
     FROM [MONSTERS_INC].Ticket t
-        INNER JOIN [MONSTERS_INC].Envio e on e.envio_ticket = t.tick_id
-        INNER JOIN [MONSTERS_INC].Caja c on c.caja_id = t.tick_caja
-        INNER JOIN [MONSTERS_INC].Pago p on p.pago_ticket = t.tick_id
-        LEFT JOIN [MONSTERS_INC].Detalle_Pago d on d.deta_id = p.pago_detalle 
+        INNER JOIN [MONSTERS_INC].Item_Ticket it on it.item_tick_ticket = t.tick_id
+        inner join [MONSTERS_INC].Producto p on p.prod_id = it.item_tick_producto
+        inner join [MONSTERS_INC].Subcategoria s on s.subc_id = p.prod_subcategoria
+        inner join [MONSTERS_INC].Categoria_Mayor cm on s.subc_categoria_mayor = cm.catm_id
+        inner join [MONSTERS_INC].Pago pg on pg.pago_ticket = t.tick_id
+    group by
+        [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
+        [MONSTERS_INC].BI_Obtener_Id_Categoria(cm.catm_descripcion, s.subc_descripcion),
+        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(pg.pago_medio_pago)
 END
 GO
+
+
 
 /* CREACION DE VISTAS */
 
@@ -855,9 +889,10 @@ CREATE VIEW [MONSTERS_INC].BI_Vista_Porcentaje_Descuento_aplicado AS
 SELECT
 	t.bi_tiempo_anio as Año,
 	t.bi_tiempo_mes as Mes,
-	(sum(distinct v.descuento_total)) * 100 / sum(v.cantidad_productos * v.importe_unitario) as Porcentaje
-FROM [MONSTERS_INC].BI_Hechos_Venta v
-	join [MONSTERS_INC].BI_Tiempo t on t.bi_tiempo_id = v.bi_tiempo_id
+    sum(p.bi_promo_porc_desc) / count(*) as Porcentaje
+	--(sum(distinct v.descuento_total)) * 100 / sum(v.cantidad_productos * v.importe_unitario) as Porcentaje
+FROM [MONSTERS_INC].BI_Hechos_Promocion p
+	JOIN [MONSTERS_INC].BI_Tiempo t on t.bi_tiempo_id = p.bi_promo_tiempo_id
 GROUP BY
 	t.bi_tiempo_anio,
 	t.bi_tiempo_mes
@@ -869,27 +904,31 @@ IF Object_id('MONSTERS_INC.BI_Vista_Top_3_Categorias_Descuento') IS NOT NULL
   DROP VIEW [MONSTERS_INC].BI_Vista_Top_3_Categorias_Descuento
 GO
 
+-- Problema TOP 3: https://stackoverflow.com/questions/971964/limit-10-20-in-sql-server
+
 CREATE VIEW [MONSTERS_INC].BI_Vista_Top_3_Categorias_Descuento AS
-SELECT
-	t.bi_tiempo_anio as Anio,
-    t.bi_tiempo_cuatrimestre as Cuatrimestre,
-    v.categoria_desc as Categoria,
-	sum(distinct v.descuento_promo_prod) as SumatoriaDescuentosAplicados
-FROM [MONSTERS_INC].BI_Hechos_Venta v
-	join [MONSTERS_INC].BI_Tiempo t on v.bi_tiempo_id = t.bi_tiempo_id
-GROUP BY
-    t.bi_tiempo_anio,
-	t.bi_tiempo_cuatrimestre,
-    v.categoria_desc
-HAVING sum(distinct v.descuento_promo_prod) IN (
-    SELECT TOP 3 
-        sum(distinct vs.descuento_promo_prod)
-    FROM [MONSTERS_INC].BI_Hechos_Venta vs
-        INNER JOIN [MONSTERS_INC].BI_Tiempo ts ON vs.bi_tiempo_id = ts.bi_tiempo_id
-    WHERE ts.bi_tiempo_anio = t.bi_tiempo_anio AND ts.bi_tiempo_cuatrimestre = t.bi_tiempo_cuatrimestre
-    GROUP BY vs.categoria_desc
-    ORDER BY 1 DESC
-)
+    WITH DescuentosPorCategoria AS (
+        SELECT
+            t.bi_tiempo_anio AS Anio,
+            t.bi_tiempo_cuatrimestre AS Cuatrimestre,
+            c.catm_descripcion AS Categoria,
+            MAX(p.bi_promo_max_desc) AS SumatoriaDescuentosAplicados,
+            ROW_NUMBER() OVER (PARTITION BY t.bi_tiempo_anio, t.bi_tiempo_cuatrimestre ORDER BY max(p.bi_promo_max_desc) DESC) AS NumeroFila
+        FROM [MONSTERS_INC].BI_Hechos_Promocion p
+        INNER JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = p.bi_promo_tiempo_id
+        INNER JOIN [MONSTERS_INC].BI_Categoria c ON c.bi_categoria_id = p.bi_promo_categoria_id
+        GROUP BY
+            t.bi_tiempo_anio,
+            t.bi_tiempo_cuatrimestre,
+            c.catm_descripcion
+    )
+    SELECT
+        Anio,
+        Cuatrimestre,
+        Categoria,
+        SumatoriaDescuentosAplicados
+    FROM DescuentosPorCategoria
+    WHERE NumeroFila <= 3
 GO
 
 -----------------------------------------------------------------------------  7
@@ -898,13 +937,12 @@ IF Object_id('MONSTERS_INC.BI_Vista_Porcentaje_Cumplimiento_Envios') IS NOT NULL
   DROP VIEW [MONSTERS_INC].BI_Vista_Porcentaje_Cumplimiento_Envios
 GO
 
-
 CREATE VIEW [MONSTERS_INC].BI_Vista_Porcentaje_Cumplimiento_Envios AS
 SELECT
     s.bi_sucursal_id AS Sucursal,
     t.bi_tiempo_anio AS Año,
     t.bi_tiempo_mes AS Mes,
-	sum(e.bi_envio_porc_cumpl) / count(*)
+	sum(e.bi_envio_porc_cumpl) / count(*) AS PorcentajeCumplimiento
 FROM [MONSTERS_INC].BI_Hechos_Envio e
     JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = e.bi_envio_tiempo_id
     JOIN [MONSTERS_INC].BI_Sucursal s ON e.bi_envio_sucursal_id = s.bi_sucursal_id
@@ -958,7 +996,7 @@ GO
 CREATE VIEW [MONSTERS_INC].BI_Vista_Top_3_Sucursales_Importe_Cuotas AS
 SELECT top 3
     s.bi_sucursal_id as Sucursal,
-    mp.medio_pago_nombre + ' | ' + mp.medio_pago_tipo as MedioDePago,
+    mp.medio_pago_nombre as MedioDePago,
     t.bi_tiempo_anio as Anio,
     t.bi_tiempo_mes as Mes,
     v.venta_total_importe_cuotas as ImporteCuota
@@ -970,7 +1008,7 @@ GROUP BY
     s.bi_sucursal_id,
 	t.bi_tiempo_anio,
     t.bi_tiempo_mes,
-    mp.medio_pago_nombre + ' | ' + mp.medio_pago_tipo,
+    mp.medio_pago_nombre,
     v.venta_total_importe_cuotas
 ORDER BY
     v.venta_total_importe_cuotas desc
@@ -1003,15 +1041,16 @@ SELECT
     m.medio_pago_nombre as MedioPago,
     t.bi_tiempo_anio as Año,
     t.bi_tiempo_cuatrimestre as Cuatrimestre,
-    (sum(v.descuento_total - v.descuento_promo_prod) / (sum (v.cantidad_productos * v.importe_unitario)))*100 as Porcentaje
-FROM [MONSTERS_INC].BI_Hechos_Venta v
-    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = v.bi_tiempo_id
-	join [MONSTERS_INC].BI_Medio_Pago m on v.bi_medio_pago_id = m.bi_medio_pago_id
+    sum(p.bi_promo_porc_desc_aplicado) / count(*) as Porcentaje
+FROM [MONSTERS_INC].BI_Hechos_Promocion p
+    JOIN [MONSTERS_INC].BI_Tiempo t ON t.bi_tiempo_id = p.bi_promo_tiempo_id
+	join [MONSTERS_INC].BI_Medio_Pago m on p.bi_promo_mp_id = m.bi_medio_pago_id
 GROUP BY
     m.medio_pago_nombre,
     t.bi_tiempo_anio,
     t.bi_tiempo_cuatrimestre
 GO
+
 -----------------------------------------------------------------------------  
 
 PRINT '--- COMENZANDO LA MIGRACION DE DATOS BI ---'
@@ -1020,6 +1059,7 @@ PRINT '--- COMENZANDO LA MIGRACION DE DATOS BI ---'
 
 EXEC [MONSTERS_INC].Migrar_BI_Tiempo
 EXEC [MONSTERS_INC].Migrar_BI_Ubicacion
+EXEC [MONSTERS_INC].Migrar_BI_Categoria
 EXEC [MONSTERS_INC].Migrar_BI_Sucursal
 EXEC [MONSTERS_INC].Migrar_BI_Rango_Etario
 EXEC [MONSTERS_INC].Migrar_BI_Turno
@@ -1027,7 +1067,7 @@ EXEC [MONSTERS_INC].Migrar_BI_Caja_Tipo
 EXEC [MONSTERS_INC].Migrar_BI_Medio_Pago
 EXEC [MONSTERS_INC].Migrar_BI_Hechos_Venta
 EXEC [MONSTERS_INC].Migrar_BI_Hechos_Envio
-EXEC [MONSTERS_INC].Migrar_BI_Hechos_Cuota
+EXEC [MONSTERS_INC].Migrar_BI_Hechos_Promocion
 
 PRINT '--- MIGRACION REALIZADA ---';
 
@@ -1038,6 +1078,7 @@ PRINT '--- MIGRACION REALIZADA ---';
 select * from [MONSTERS_INC].BI_Vista_Ticket_Promedio_Mensual
 select * from [MONSTERS_INC].BI_Vista_Cantidad_Unidades_Promedio
 select * from [MONSTERS_INC].BI_Vista_Porcentaje_Anual_Cuatrimestre
+
 select * from [MONSTERS_INC].BI_Vista_Cantidad_Ventas_Por_Turno
 select * from [MONSTERS_INC].BI_Vista_Porcentaje_Descuento_aplicado
 select * from [MONSTERS_INC].BI_Vista_Top_3_Categorias_Descuento
