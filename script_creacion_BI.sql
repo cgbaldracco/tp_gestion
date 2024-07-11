@@ -890,7 +890,6 @@ SELECT
 	t.bi_tiempo_anio as Año,
 	t.bi_tiempo_mes as Mes,
     sum(p.bi_promo_porc_desc) / count(*) as Porcentaje
-	--(sum(distinct v.descuento_total)) * 100 / sum(v.cantidad_productos * v.importe_unitario) as Porcentaje
 FROM [MONSTERS_INC].BI_Hechos_Promocion p
 	JOIN [MONSTERS_INC].BI_Tiempo t on t.bi_tiempo_id = p.bi_promo_tiempo_id
 GROUP BY
