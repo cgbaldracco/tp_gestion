@@ -899,6 +899,7 @@ END
 GO
 
 /* Descuento_Medio_Pago */
+-- Se tiene, una fila por descuento con su porcentaje asociado
 
 CREATE PROCEDURE [MONSTERS_INC].Migrar_Descuento_Medio_Pago
 AS

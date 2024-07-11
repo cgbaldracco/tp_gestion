@@ -711,6 +711,7 @@ END
 GO
 
 /* BI_Hechos_Envio */
+-- Se valida, la tabla queda con menos filas, respecto de Envio del modelo creado anteriormente
 
 CREATE PROCEDURE [MONSTERS_INC].Migrar_BI_Hechos_Envio
 AS
@@ -889,7 +890,7 @@ CREATE VIEW [MONSTERS_INC].BI_Vista_Porcentaje_Descuento_aplicado AS
 SELECT
 	t.bi_tiempo_anio as Año,
 	t.bi_tiempo_mes as Mes,
-    sum(p.bi_promo_porc_desc) / count(*) as Porcentaje
+    sum(p.bi_promo_porc_desc) / count(*) as Porcentaje 
 FROM [MONSTERS_INC].BI_Hechos_Promocion p
 	JOIN [MONSTERS_INC].BI_Tiempo t on t.bi_tiempo_id = p.bi_promo_tiempo_id
 GROUP BY
@@ -902,8 +903,6 @@ GO
 IF Object_id('MONSTERS_INC.BI_Vista_Top_3_Categorias_Descuento') IS NOT NULL
   DROP VIEW [MONSTERS_INC].BI_Vista_Top_3_Categorias_Descuento
 GO
-
--- Problema TOP 3: https://stackoverflow.com/questions/971964/limit-10-20-in-sql-server
 
 CREATE VIEW [MONSTERS_INC].BI_Vista_Top_3_Categorias_Descuento AS
     WITH DescuentosPorCategoria AS (
