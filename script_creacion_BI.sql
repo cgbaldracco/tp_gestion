@@ -331,89 +331,6 @@ AS
     END
 GO
 
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Tiempo(@unaFecha datetime)
-RETURNS numeric(18)
-AS
-    BEGIN
-        DECLARE @idFecha AS numeric(18)
-
-        SELECT 
-            @idFecha = t.bi_tiempo_id
-        FROM [MONSTERS_INC].BI_Tiempo t
-        WHERE year(@unaFecha) = t.bi_tiempo_anio AND 
-        ( 
-            CASE
-                WHEN MONTH(@unaFecha) BETWEEN 1 AND 4 THEN 1
-                WHEN MONTH(@unaFecha) BETWEEN 5 AND 8 THEN 2
-                WHEN MONTH(@unaFecha) BETWEEN 9 AND 12 THEN 3
-            END
-        ) = t.bi_tiempo_cuatrimestre AND month(@unaFecha) = t.bi_tiempo_mes
-
-        RETURN @idFecha
-    END
-GO
-
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Ubicacion(@unaProvincia nvarchar(255), @unaLocalidad nvarchar(255))
-RETURNS numeric(18)
-AS
-    BEGIN
-        DECLARE @idUbicacion AS numeric(18)
-                    
-        SELECT TOP 1
-            @idUbicacion = u.bi_ubicacion_id
-        FROM [MONSTERS_INC].BI_Ubicacion u
-        WHERE u.provincia_desc = @unaProvincia AND u.localidad_desc = @unaLocalidad
-
-        RETURN @idUbicacion
-    END
-GO
-
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Turno(@unaFechaHora nvarchar(255))
-RETURNS numeric(18)
-AS
-    BEGIN
-        DECLARE @idTurno AS numeric(18)
-
-        SELECT 
-            @idTurno = t.bi_turno_id
-        FROM [MONSTERS_INC].BI_Turno t
-        WHERE [MONSTERS_INC].BI_Resolver_Turno(@unaFechaHora) = t.turno_desc
-
-        RETURN @idTurno
-    END
-GO
-
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Caja_Tipo(@unIdCaja numeric(18))
-RETURNS numeric(18)
-AS
-BEGIN
-    DECLARE @idCajaTipo AS numeric(18)
-
-    SELECT 
-        @idCajaTipo = ct.bi_caja_tipo_id
-    FROM [MONSTERS_INC].Caja c
-        INNER JOIN [MONSTERS_INC].BI_Caja_Tipo ct ON ct.caja_desc = c.caja_tipo AND ct.caja_nro = c.caja_nro
-    WHERE c.caja_id = @unIdCaja
-
-    RETURN @idCajaTipo
-END
-GO
-
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Categoria(@unaDescripcionCat nvarchar(255), @unaDescripcionSubcat nvarchar(255))
-RETURNS numeric(18)
-AS
-BEGIN
-    DECLARE @idCategoria AS numeric(18)
-
-    SELECT 
-        @idCategoria = c.bi_categoria_id
-    FROM [MONSTERS_INC].BI_Categoria c
-    WHERE c.catm_descripcion = @unaDescripcionCat and c.subc_descripcion = @unaDescripcionSubcat
-
-    RETURN @idCategoria
-END
-GO
-
 CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(@idPersona numeric(18))
 RETURNS numeric(18)
 AS
@@ -453,43 +370,6 @@ AS
         WHERE [MONSTERS_INC].BI_Resolver_Rango_Etario(@fechaNacimientoPersona) = re.rango_etario_desc
 
         RETURN @idRangoEtario
-    END
-GO
-
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(@unMedioPagoId numeric(18))
-RETURNS numeric(18)
-AS
-    BEGIN
-        DECLARE @idMedioPagoBi AS numeric(18)
-        DECLARE @tipoMedioBi AS NVARCHAR(50), @nombreMedioBi AS NVARCHAR(50)
-        
-        SELECT
-            @tipoMedioBi = m.medio_pago_tipo,
-            @nombreMedioBi = m.medio_pago_nombre
-        FROM [MONSTERS_INC].Medio_Pago m
-        WHERE m.medio_pago_id = @unMedioPagoId
-
-        SELECT
-            @idMedioPagoBi = mpb.bi_medio_pago_id
-        FROM [MONSTERS_INC].BI_Medio_Pago mpb 
-        WHERE mpb.medio_pago_nombre = @nombreMedioBi AND mpb.medio_pago_tipo = @tipoMedioBi
-
-        RETURN @idMedioPagoBi
-    END
-GO
-
-CREATE FUNCTION [MONSTERS_INC].BI_Obtener_Id_Sucursal(@unNroSucursal nvarchar(255))
-RETURNS numeric(18)
-AS
-    BEGIN
-        DECLARE @idSucursalBi AS numeric(18)
-
-        SELECT 
-            @idSucursalBi = s.bi_sucursal_id
-        FROM [MONSTERS_INC].BI_Sucursal s
-        WHERE s.sucursal_desc = @unNroSucursal
-
-        RETURN @idSucursalBi
     END
 GO
 
@@ -666,13 +546,53 @@ BEGIN
     bi_venta_medio_pago_id, bi_venta_ubicacion_id, bi_venta_sucursal_id, venta_prom_total, venta_total_monto, 
     venta_cant_prom_productos, venta_cantidad, venta_total_importe_cuotas, venta_promedio_cuota)     
     select
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
-        [MONSTERS_INC].BI_Obtener_Id_Turno(t.tick_fecha_hora),
-        [MONSTERS_INC].BI_Obtener_Id_Caja_Tipo(t.tick_caja),
-        [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(t.tick_empleado),
-        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(p.pago_medio_pago),
-        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(pr.prov_nombre, l.loca_nombre),
-        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero),
+        (
+            SELECT 
+                ts.bi_tiempo_id
+            FROM [MONSTERS_INC].BI_Tiempo ts
+            WHERE year(t.tick_fecha_hora) = ts.bi_tiempo_anio AND 
+            ( 
+                CASE
+                    WHEN MONTH(t.tick_fecha_hora) BETWEEN 1 AND 4 THEN 1
+                    WHEN MONTH(t.tick_fecha_hora) BETWEEN 5 AND 8 THEN 2
+                    WHEN MONTH(t.tick_fecha_hora) BETWEEN 9 AND 12 THEN 3
+                END
+            ) = ts.bi_tiempo_cuatrimestre AND month(t.tick_fecha_hora) = ts.bi_tiempo_mes
+        ) as TiempoVenta,
+        (
+            SELECT 
+                ts.bi_turno_id
+            FROM [MONSTERS_INC].BI_Turno ts
+            WHERE [MONSTERS_INC].BI_Resolver_Turno(t.tick_fecha_hora) = ts.turno_desc
+        ) as TurnoVenta,
+        (
+            SELECT 
+                ct.bi_caja_tipo_id
+            FROM [MONSTERS_INC].Caja cs
+                INNER JOIN [MONSTERS_INC].BI_Caja_Tipo ct ON ct.caja_desc = cs.caja_tipo AND ct.caja_nro = cs.caja_nro
+            WHERE cs.caja_id = t.tick_caja
+        ) as CajaTipoVenta,
+        [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(t.tick_empleado) as RangoEtarioEmpleado,
+        (
+            SELECT
+                mpb.bi_medio_pago_id
+            FROM [MONSTERS_INC].Medio_Pago m
+                INNER JOIN [MONSTERS_INC].BI_Medio_Pago mpb on mpb.medio_pago_nombre = m.medio_pago_nombre 
+                    AND mpb.medio_pago_tipo = m.medio_pago_tipo
+            WHERE m.medio_pago_id = p.pago_medio_pago
+        ) as MedioPagoVenta,
+        (
+            SELECT TOP 1
+                u.bi_ubicacion_id
+            FROM [MONSTERS_INC].BI_Ubicacion u
+            WHERE u.provincia_desc = pr.prov_nombre AND u.localidad_desc = l.loca_nombre
+        ) as UbicacionVenta,
+        (
+            SELECT 
+                sc.bi_sucursal_id
+            FROM [MONSTERS_INC].BI_Sucursal sc
+            WHERE sc.sucursal_desc = s.sucu_numero
+        ) SucursalVenta,
         avg(distinct t.tick_total) as PromedioTotalVenta,
         sum(distinct t.tick_total) as TotalVenta,
         sum(it.item_tick_cantidad) / count(*) as CantidadPromedioProductos,
@@ -700,13 +620,14 @@ BEGIN
             INNER JOIN [MONSTERS_INC].Localidad l on l.loca_id = s.sucu_localidad
             INNER JOIN [MONSTERS_INC].Provincia pr on pr.prov_id = l.loca_provincia
     group by  
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
-        [MONSTERS_INC].BI_Obtener_Id_Turno(t.tick_fecha_hora),
-        [MONSTERS_INC].BI_Obtener_Id_Caja_Tipo(t.tick_caja),
+        year(t.tick_fecha_hora),
+        month(t.tick_fecha_hora),
+        [MONSTERS_INC].BI_Resolver_Turno(t.tick_fecha_hora),
+        t.tick_caja,
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario(t.tick_empleado),
-        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(p.pago_medio_pago),
-        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(pr.prov_nombre, l.loca_nombre),
-        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero)
+        p.pago_medio_pago,
+        pr.prov_nombre, l.loca_nombre,
+        s.sucu_numero
 END
 GO
 
@@ -720,10 +641,32 @@ BEGIN
     (bi_envio_tiempo_id, bi_envio_rango_etario_id, bi_envio_ubicacion_id,
      bi_envio_sucursal_id, bi_envio_cantidad, bi_envio_max_costo, bi_envio_porc_cumpl)
     select 
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(en.entr_fecha_hora_entrega),
-        [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(c.clie_id),
-        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre),
-        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero),
+        (
+            SELECT 
+                ts.bi_tiempo_id
+            FROM [MONSTERS_INC].BI_Tiempo ts
+            WHERE year(en.entr_fecha_hora_entrega) = ts.bi_tiempo_anio AND 
+            ( 
+                CASE
+                    WHEN month(en.entr_fecha_hora_entrega) BETWEEN 1 AND 4 THEN 1
+                    WHEN month(en.entr_fecha_hora_entrega) BETWEEN 5 AND 8 THEN 2
+                    WHEN month(en.entr_fecha_hora_entrega) BETWEEN 9 AND 12 THEN 3
+                END
+            ) = ts.bi_tiempo_cuatrimestre AND month(en.entr_fecha_hora_entrega) = ts.bi_tiempo_mes
+        ) as TiempoEnvio,
+        [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(c.clie_id) as RangoEtarioCliente,
+        (        
+            SELECT TOP 1
+                u.bi_ubicacion_id
+            FROM [MONSTERS_INC].BI_Ubicacion u
+            WHERE u.provincia_desc = p.prov_nombre AND u.localidad_desc = l.loca_nombre
+        ) as UbicacionCliente,
+        (
+            SELECT 
+                sn.bi_sucursal_id
+            FROM [MONSTERS_INC].BI_Sucursal sn
+            WHERE sn.sucursal_desc = s.sucu_numero
+        ) as SucursalEnvio,
         count(distinct e.envio_id) as CantidadEnvios,
         max(e.envio_costo) as EnvioMaximo,
         (SUM(CASE WHEN CAST(en.entr_fecha_hora_entrega AS date) <= CAST(e.envio_fecha AS date) THEN 1 ELSE 0 END) 
@@ -738,10 +681,12 @@ BEGIN
         inner join [MONSTERS_INC].Caja cj on cj.caja_id = t.tick_caja
         inner join [MONSTERS_INC].Sucursal s on s.sucu_id = cj.caja_sucursal
     group by
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(en.entr_fecha_hora_entrega),
+        year(en.entr_fecha_hora_entrega),
+        month(en.entr_fecha_hora_entrega),
         [MONSTERS_INC].BI_Obtener_Id_Rango_Etario_Clie(c.clie_id),
-        [MONSTERS_INC].BI_Obtener_Id_Ubicacion(p.prov_nombre, l.loca_nombre),
-        [MONSTERS_INC].BI_Obtener_Id_Sucursal(s.sucu_numero)
+        p.prov_nombre, 
+        l.loca_nombre,
+        s.sucu_numero
 END
 GO
 
@@ -754,9 +699,32 @@ BEGIN
     (bi_promo_tiempo_id, bi_promo_categoria_id, bi_promo_mp_id, 
     bi_promo_porc_desc, bi_promo_max_desc, bi_promo_porc_desc_aplicado)
     SELECT
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
-        [MONSTERS_INC].BI_Obtener_Id_Categoria(cm.catm_descripcion, s.subc_descripcion),
-        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(pg.pago_medio_pago),
+        (
+            SELECT 
+                ts.bi_tiempo_id
+            FROM [MONSTERS_INC].BI_Tiempo ts
+            WHERE year(t.tick_fecha_hora) = ts.bi_tiempo_anio AND 
+            ( 
+                CASE
+                    WHEN MONTH(t.tick_fecha_hora) BETWEEN 1 AND 4 THEN 1
+                    WHEN MONTH(t.tick_fecha_hora) BETWEEN 5 AND 8 THEN 2
+                    WHEN MONTH(t.tick_fecha_hora) BETWEEN 9 AND 12 THEN 3
+                END
+            ) = ts.bi_tiempo_cuatrimestre AND month(t.tick_fecha_hora) = ts.bi_tiempo_mes
+        ) as TiempoPromocion,
+        (    
+            SELECT 
+                c.bi_categoria_id
+            FROM [MONSTERS_INC].BI_Categoria c
+            WHERE c.catm_descripcion = cm.catm_descripcion and c.subc_descripcion = s.subc_descripcion
+        ) as CategoriaProductoEnPromocion,
+        (
+            SELECT
+                mpb.bi_medio_pago_id
+            FROM [MONSTERS_INC].Medio_Pago m
+                JOIN [MONSTERS_INC].BI_Medio_Pago mpb ON m.medio_pago_nombre = mpb.medio_pago_nombre AND m.medio_pago_tipo = mpb.medio_pago_tipo
+            WHERE m.medio_pago_id = pg.pago_medio_pago
+        ) as MedioPagoPromocion,
         sum(distinct t.tick_total_descuento + t.tick_total_descuento_mp) / sum(distinct t.tick_total_productos) * 100 as PorcentajeDescAplicado,
         sum(item_tick_descuento_aplicado) as SumDescuentoAplicadoProducto,
         sum(distinct t.tick_total_descuento_mp) / sum(distinct t.tick_total_productos) * 100 as PorcentajeDesc
@@ -767,13 +735,11 @@ BEGIN
         inner join [MONSTERS_INC].Categoria_Mayor cm on s.subc_categoria_mayor = cm.catm_id
         inner join [MONSTERS_INC].Pago pg on pg.pago_ticket = t.tick_id
     group by
-        [MONSTERS_INC].BI_Obtener_Id_Tiempo(t.tick_fecha_hora),
-        [MONSTERS_INC].BI_Obtener_Id_Categoria(cm.catm_descripcion, s.subc_descripcion),
-        [MONSTERS_INC].BI_Obtener_Id_Medio_Pago(pg.pago_medio_pago)
+        year(t.tick_fecha_hora), month(t.tick_fecha_hora),
+        cm.catm_descripcion, s.subc_descripcion,
+        pg.pago_medio_pago
 END
 GO
-
-
 
 /* CREACION DE VISTAS */
 
@@ -1021,7 +987,9 @@ GO
 CREATE VIEW [MONSTERS_INC].BI_Vista_Promedio_Importe_Cuota_RangoEtario AS
 SELECT
     re.rango_etario_desc AS RangoEtario,
-    avg(v.venta_promedio_cuota) AS PromedioImporteCuota
+    sum(isnull(v.venta_promedio_cuota,0)) / sum(
+        case when v.venta_promedio_cuota is not null then 1 else 0 end
+    ) AS PromedioImporteCuota  -- Evita warning de ANSI SQL, equivalente a avg(v.venta_promedio_cuota)
 FROM [MONSTERS_INC].BI_Hechos_Venta v
     INNER JOIN [MONSTERS_INC].BI_Rango_Etario re ON re.bi_rango_etario_id = v.bi_venta_rango_etario_id
 GROUP BY
